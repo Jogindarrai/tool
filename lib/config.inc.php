@@ -37,7 +37,7 @@ $ARR_DBS = [];
 if (LOCAL_MODE) {
     $ARR_DBS["dbs"] = [
         'host' => 'localhost',
-        'name' => 'tools',
+        'name' => 'erp',
         'user' => 'root',
         'password' => ''
     ];
@@ -45,7 +45,7 @@ if (LOCAL_MODE) {
 } else {
     $ARR_DBS["dbs"] = [
         'host' => 'localhost',
-        'name' => 'tools',
+        'name' => 'erp',
         'user' => 'root',
         'password' => ''
     ];

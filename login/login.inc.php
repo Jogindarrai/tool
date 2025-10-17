@@ -6,7 +6,7 @@ class LoginUser extends dbc
 
 {
 
-	
+
 
 	 public function  login($data)
 
@@ -18,19 +18,19 @@ class LoginUser extends dbc
 
 			$password=$this->password($data['password']);
 
-			
+
 
 			if(str_replace('www.','',$_SERVER['HTTP_HOST']) =='formalfunky.com')
 
 			{
 
-			  $ww =" and live_user='1' ";	
+			  $ww =" and live_user='1' ";
 
 			}
 
-			
 
-			$query=parent::db_query("select * from pms_admin_users where email ='".$email."' and password ='".$password."' and status='1' ".$ww); 
+
+			$query=parent::db_query("select * from pms_admin_users where email ='".$email."' and password ='".$password."' and status='1' ".$ww);
 
 			//echo mysql_num_rows($query);
 
@@ -81,9 +81,9 @@ class LoginUser extends dbc
 
 					}
 
-				
 
-				
+
+
 
 		    }else {
 
@@ -93,27 +93,26 @@ class LoginUser extends dbc
 
 			}
 
-			
 
-			return $flag; 
+
+			return $flag;
 
 	 }
 
-	 
+
 
 	 public function password($password)
 
 	 {
 
-	        $password=md5($password); 
-
-		    $password=base64_encode($password); 	
+	        $password=md5($password);
+		    $password=base64_encode($password);
 
 		    return $password;
 
 	 }
 
-	 
+
 
 	 public function send_mail($mailer_arr){
 
@@ -145,13 +144,13 @@ class LoginUser extends dbc
 
 		 if( !empty($EmailFrom) )
 
-		 $headers  .= "From: ".$EmailFromNmae.'<'.$EmailFrom.'>'.$eol; 
+		 $headers  .= "From: ".$EmailFromNmae.'<'.$EmailFrom.'>'.$eol;
 
 		 }else{
 
 		 if( !empty($EmailFrom) )
 
-		 $headers  .= "From: ".$EmailFrom.$eol; 
+		 $headers  .= "From: ".$EmailFrom.$eol;
 
 		 }
 
@@ -167,27 +166,27 @@ class LoginUser extends dbc
 
 		 $headers .= "BCC: ".$EmailBcc.$eol;
 
-		 $headers .= "MIME-Version: 1.0".$eol; 
+		 $headers .= "MIME-Version: 1.0".$eol;
 
-		 if( !isset( $mailer_arr['file_path'] ) || $mailer_arr['file_path'] == '' ){ 
+		 if( !isset( $mailer_arr['file_path'] ) || $mailer_arr['file_path'] == '' ){
 
 		 $headers .= "Content-type: text/html".$eol;
 
-		 if(mail($EmailTo, $EmailSubject, $EmailMessage, $headers)) 
+		 if(mail($EmailTo, $EmailSubject, $EmailMessage, $headers))
 
 		 return true;
 
-						else 
+						else
 
 						return false;
 
-		 
+
 
 		 }
 
 		 $attachment = chunk_split( base64_encode(file_get_contents($filepath)) );
 
-		 $separator = md5(time());  
+		 $separator = md5(time());
 
 		 $headers .= "Content-Type: multipart/mixed; boundary=\"".$separator."\"";
 
@@ -205,7 +204,7 @@ class LoginUser extends dbc
 
 		 $body .= "--".$separator.$eol;
 
-		 $body .= "Content-Type: application/octet-stream; name=\"".$filename."\"".$eol; 
+		 $body .= "Content-Type: application/octet-stream; name=\"".$filename."\"".$eol;
 
 		 $body .= "Content-Transfer-Encoding: base64".$eol;
 

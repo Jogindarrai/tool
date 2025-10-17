@@ -16,30 +16,30 @@
 
 
 if(($_SESSION["AMD"][3]==2 && $_SESSION["AMD"][5]==4) || $_GET['dept']=='inc'){
-include 'inc-head-dashboard.php';	
+include 'inc-head-dashboard.php';
 }
 elseif($_SESSION["AMD"][3]==4 && $_SESSION["AMD"][5]==4){
-include 'inc-executive-dashboard.php';	
+include 'inc-executive-dashboard.php';
 }
 elseif(($_SESSION["AMD"][3]==2 && $_SESSION["AMD"][5]==6) || $_GET['dept']=='tax'){
-include 'taxation-head-dashboard.php';	
+include 'taxation-head-dashboard.php';
 }
 elseif($_SESSION["AMD"][3]==4 && $_SESSION["AMD"][5]==6){
-include 'taxation-executive-dashboard.php';	
+include 'taxation-executive-dashboard.php';
 }
 elseif(($_SESSION["AMD"][3]==2 && $_SESSION["AMD"][5]==5) || $_GET['dept']=='trademark'){
-include 'trademark-head-dashboard.php';	
+include 'trademark-head-dashboard.php';
 }
 elseif($_SESSION["AMD"][3]==4 && $_SESSION["AMD"][5]==5){
-include 'trademark-executive-dashboard.php';	
+include 'trademark-executive-dashboard.php';
 }
 else{
  ?>
 <section class="mtb50">
   <div class="container">
     <div class="row">
-      <div class="col-sm-12 center-block text-center"> 
-      <?php  if(in_array($_SESSION["AMD"][3],array("1", "6"))){?> 
+      <div class="col-sm-12 center-block text-center">
+      <?php  if(in_array($_SESSION["AMD"][3],array("1", "6"))){?>
       <a href="<?=SITE_PATH_ADM.'index.php?comp='?>leads&department=2"  class="btn btn-secondary mbt15">Manage Lead</a>
       <?php } else { ?>
         <a href="<?=SITE_PATH_ADM.'index.php?comp='?>leads"  class="btn btn-secondary mbt15">Manage Lead</a>
@@ -91,14 +91,14 @@ else{
               </select>
             </div>-->
           </div>
-          <?php 
+          <?php
 
 		  $wrchart="where 1";
 		  $folups="where 1";
 
 if($_SESSION["AMD"][3]=='5'){
 
- $extra = " and create_by='".$_SESSION["AMD"][0]."' or salesecutiveid='".$_SESSION["AMD"][0]."'"; 
+ $extra = " and create_by='".$_SESSION["AMD"][0]."' or salesecutiveid='".$_SESSION["AMD"][0]."'";
  $adminqry="and user_id='".$_SESSION["AMD"][0]."'";
 
  $wrchart="where salesecutiveid='".$_SESSION["AMD"][0]."'";
@@ -130,9 +130,9 @@ if($_SESSION["AMD"][3]=='5'){
 
 		if($a==7){$comma='';}
 
-		
 
-             
+
+
 
 				$leadarr=array( "name" => date('jS \ M y', strtotime($date)),"y" =>$PDO->getSingleresult("select count(*) from #_leads ".$wrchart." and date(created_on)='".$date."' "),"drilldown" =>date('jS \ M y', strtotime($date)));
 				array_push($leadsarr,$leadarr);
@@ -177,11 +177,11 @@ Highcharts.chart('DailyLead', {
     series: [{name: 'Leads',colorByPoint: false,data: <?=json_encode($leadsarr)?> }],
 });
 
- </script> 
+ </script>
         </div>
-        
-        <!-- /# card --> 
-        
+
+        <!-- /# card -->
+
       </div>
       <div class="col-lg-6">
         <div class="card  align-items-stretch w-100 ">
@@ -196,7 +196,7 @@ Highcharts.chart('DailyLead', {
                 </div>
               </div>
             </div>
-            
+
           </div>
            <script>
             function getfunnel(dates){
@@ -219,15 +219,15 @@ $.ajax({
             <h2 class="text-center"> Overall Lead Funnel</h2>
           </div>
           <div class="card-body">
-            <?php 
+            <?php
 
 		  $comm=',';
 
 		  $ii=1;
 
-		   $lSry =$PDO->db_query("select * from #_lead_stage where status=1 order by shortorder ASC"); 
+		   $lSry =$PDO->db_query("select * from #_lead_stage where status=1 order by shortorder ASC");
 
-		   
+
 
 	       while($lSRs = $PDO->db_fetch_array($lSry)){
 
@@ -235,11 +235,11 @@ $.ajax({
 
 				$comm='';
 
-				}   
+				}
 
 	 $cnt= $PDO->getSingleresult("select count(*) from #_leads ".$wrchart."  and status='".$lSRs['pid']."'");
 
-	  
+
 
 	   $stages .= '['.'\''.$lSRs['name'].'\','.$cnt.']'.$comm;
 
@@ -247,7 +247,7 @@ $.ajax({
 
 		   }
 
-		  
+
 
 		   ?>
             <div id="Funnel" style="height: 100%"></div>
@@ -255,13 +255,13 @@ $.ajax({
 
 			Highcharts.chart('Funnel', {
 
-						
+
 
    colors: ['#28a745', '#1e406d', '#d1b655', '#454545', '#aaeeee',
 
-      '#ff0066', '#eeaaee', '#55BF3B', '#DF5353', '#7798BF', '#aaeeee'],	
+      '#ff0066', '#eeaaee', '#55BF3B', '#DF5353', '#7798BF', '#aaeeee'],
 
-								
+
 
     chart: {
 
@@ -279,11 +279,11 @@ $.ajax({
 
   },
 
-  
 
-  
 
-  
+
+
+
 
     title: {
 
@@ -335,7 +335,7 @@ $.ajax({
 
 });
 
-							</script> 
+							</script>
           </div>
         </div>
       </div>
@@ -382,18 +382,18 @@ $.ajax({
               <select class="pull-right">
                 <option>Daily</option>
                 <option>Week</option>
-                <option>Monthly</option><?=$leaveRow['comments']?> 
+                <option>Monthly</option><?=$leaveRow['comments']?>
               </select>
             </div>-->
-            <?php 
+            <?php
 
-		   $sourcery =$PDO->db_query("select * from #_lead_source where status=1"); 
+		   $sourcery =$PDO->db_query("select * from #_lead_source where status=1");
 
 		   $sourceearr=array();
 
 	       while($sourceRs = $PDO->db_fetch_array($sourcery)){
 
-			   
+
 
 		 $scnt2=$PDO->getSingleresult("select count(*) from #_leads  ".$wrchart." and source='".$sourceRs['pid']."'");
 
@@ -405,7 +405,7 @@ $.ajax({
 
 		   }}
 
-		  
+
 
 		   ?>
             <div id="Sourcetype" style="min-height:500px"></div>
@@ -457,9 +457,9 @@ Highcharts.chart('Sourcetype', {
 
       '#0f1b2f', '#0000ff', '#ff0000', '#9900cc', '#099346', '#aaeeee','#00000','#918887','#749442','#996666','#37b54a'],
 
-	
 
-	
+
+
 
 chart: {
 
@@ -473,7 +473,7 @@ chart: {
 
     },
 
-	
+
 
 			   credits: {
 
@@ -481,7 +481,7 @@ chart: {
 
   },
 
-	
+
 
     title: {
 
@@ -533,37 +533,37 @@ chart: {
 
 		data:<?=json_encode($sourceearr)?>
 
-      
+
 
     }]
 
 });
 
- </script> 
+ </script>
           </div>
-          
-          <!-- /# card --> 
-          
+
+          <!-- /# card -->
+
         </div>
       </div>
       <div class="col-lg-6">
         <div class="card">
-          <?php 
+          <?php
 		   $audatas='';
 			$totalled =$PDO->getSingleresult("select count(*) from #_leads ".$wrchart." " );
 			$auQuery =$PDO->db_query("select cityID, count(*) as count from #_leads ".$wrchart."  and cityID!=0 group by cityID");
-			
+
 		   while($aurow=$PDO->db_fetch_array($auQuery, PDO::FETCH_GROUP)){
 			   if($aurow['count']>1){
 			   if($aurow['cityID']==0){
-				$auname='N/A';   
+				$auname='N/A';
 			   }else{
 			$auname=$PDO->getSingleresult("select name from #_india_cities where pid='".$aurow['cityID']."' ");
 			   }
 			$audatas.='{"name": "'.$auname.'", "y": '.$aurow['count'].'},';
 		   }}
-		   ?> 
-          
+		   ?>
+
           <div id="india_citiesmana" style="min-height:500px"></div>
           <script type="text/javascript">
 
@@ -615,7 +615,7 @@ title: {
                 format: '{point.name}: {point.y}'
             },
 			showInLegend: true,
-			
+
         }
     },
     "series": [
@@ -629,17 +629,17 @@ title: {
     ]
 });
 
-    
- </script> 
+
+ </script>
         </div>
-        <!-- /# card --> 
+        <!-- /# card -->
       </div>
-      
+
     </div>
   </div>
-  
+
   <!-- /# row -->
-  
+
   </div>
   </div>
 </section>
@@ -648,27 +648,27 @@ title: {
     <div class="row">
     <div class="col-lg-6">
         <div class="card">
-          <?php 
-		   /*$spQuery =$PDO->db_query("select spid, count(*) as count from #_leads where 1 group by spid"); 
+          <?php
+		   /*$spQuery =$PDO->db_query("select spid, count(*) as count from #_leads where 1 group by spid");
 		   while($sprow=$PDO->db_fetch_array($spQuery, PDO::FETCH_GROUP)){
 			   $PDO->getSingleresult("select count(*) from #_leads ".$wrchart." and status='".$lSRs['pid']."'");
 			$data='{"name": "Chrome", "y": 62.74},';
 		   } */
 		   $audatas='';
-		    //$auQuery =$PDO->db_query("select au.name as sename,  count(*) as count from #_leads as ld JOIN pms_admin_users as au ON au.user_id=ld.salesecutiveid group by ld.salesecutiveid"); 
+		    //$auQuery =$PDO->db_query("select au.name as sename,  count(*) as count from #_leads as ld JOIN pms_admin_users as au ON au.user_id=ld.salesecutiveid group by ld.salesecutiveid");
 			$totalled =$PDO->getSingleresult("select count(*) from #_leads ".$wrchart." ");
 			$auQuery =$PDO->db_query("select salesecutiveid, count(*) as count from #_leads ".$wrchart."  group by salesecutiveid");
-			
+
 		   while($aurow=$PDO->db_fetch_array($auQuery, PDO::FETCH_GROUP)){
 			   if($aurow['salesecutiveid']==0){
-				$auname='Not assigned';   
+				$auname='Not assigned';
 			   }else{
 			$auname=$PDO->getSingleresult("select name from pms_admin_users where user_id='".$aurow['salesecutiveid']."'");
 			   }
 			$audatas.='{"name": "'.$auname.'<br>'.$aurow['count'].'", "y": '.$aurow['count'].'},';
 		   }
-		   ?> 
-          
+		   ?>
+
           <div id="seusers" style="min-height:500px"></div>
           <script type="text/javascript">
 
@@ -739,14 +739,14 @@ title: {
     ]
 });
 
-    
- </script> 
+
+ </script>
         </div>
-        <!-- /# card --> 
+        <!-- /# card -->
       </div>
       <div class="col-lg-6">
       <div class="row justify-content-end">
-      
+
             <div class="col-6">
               <div class="form-group">
                 <div class="input-group">
@@ -776,14 +776,14 @@ $.ajax({
 	return false;}
             </script>
         <div class="card">
-          <?php 
-			
+          <?php
+
 			$paid=$PDO->getSingleresult("select count(*) from #_leads ".$wrchart." and DATE(created_on)='".date('Y-m-d')."' and source IN (select pid from #_lead_source where ltype='Paid') ");
-			
+
 			$organic=$PDO->getSingleresult("select count(*) from #_leads ".$wrchart." and DATE(created_on)='".date('Y-m-d')."' and source IN (select pid from #_lead_source where ltype='Organic') ");
 		 $audatas='{"name": "Paid", "y": '.$paid.'},{"name": "Organic", "y": '.$organic.'}';
-		   ?> 
-          
+		   ?>
+
           <div id="countrymana" style="min-height:500px"></div>
           <script type="text/javascript">
 
@@ -835,7 +835,7 @@ title: {
                 format: '{point.name}: {point.y}'
             },
 			showInLegend: true,
-			
+
         }
     },
     "series": [
@@ -849,17 +849,17 @@ title: {
     ]
 });
 
-    
- </script> 
+
+ </script>
         </div>
-        <!-- /# card --> 
+        <!-- /# card -->
       </div>
-      
+
     </div>
   </div>
-  
+
   <!-- /# row -->
-  
+
   </div>
   </div>
 </section>
@@ -884,37 +884,37 @@ title: {
               </thead>
               <tbody>
               <?php
-			  
-			  
+
+
 			   $comma=',';
 			$date2 = date('Y-m-d', strtotime('-8 days'));
 			$end_date2 = date('Y-m-d');
-			
-			
+
+
 			$a1=1;
 	while (strtotime($date2) <= strtotime($end_date2)) {
 $salesAmiount=$PDO->getSingleresult("select sum(serviceprice) from #_crequirement where DATE(created_on)='".$date2."'");
 
-		$paidAmount=$PDO->getSingleresult("select sum(qAmount) from #_paymentdetails where dates='".$date2."' and dates>'2018-09-12'");	
+		$paidAmount=$PDO->getSingleresult("select sum(qAmount) from #_paymentdetails where dates='".$date2."' and dates>'2018-09-12'");
 		if($salesAmiount>0){
 			 ?>
 	<tr>
                   <td><?=date('jS \ M y', strtotime($date2))?></td>
-                 
+
                  <!-- <td>Rs <?=$paidAmount==''?'0':$paidAmount;?></td>
                   <td>Rs <?=(int)$salesAmiount - (int)$paidAmount?></td>-->
                    <td>Rs <?=$salesAmiount==''?'0':$salesAmiount;?></td>
                 </tr>
 	<?php } $date2 = date ("Y-m-d", strtotime("+1 day", strtotime($date2))); } ?>
-                
-             
+
+
               </tbody>
             </table>
           </div>
         </div>
-        <!-- /# card --> 
+        <!-- /# card -->
       </div>
-      
+
       <div class="col-lg-6">
         <div class="card  align-items-stretch w-100">
           <div class="row">
@@ -951,8 +951,8 @@ $.ajax({
               </div>
             </div>
           </div>
-        
-        
+
+
             <table class="table table-bordered table-responsive-xs table-responsive-sm  table-striped custom-table" id="saledatewise">
               <thead>
                 <tr>
@@ -963,14 +963,14 @@ $.ajax({
                 </tr>
               </thead>
               <tbody>
-                 <?php 
-				 $date2 = date('Y-m-d'); 
+                 <?php
+				 $date2 = date('Y-m-d');
 				 $checkAmiount=$PDO->getSingleresult("select sum(serviceprice) from #_crequirement where DATE(created_on)='".$date2."'");
 				 if($checkAmiount>0){
-				 
-				 $totalAmount=0; 
-				  
-			$payry =$PDO->db_query("select * from pms_admin_users where status=1 and user_type=5"); 
+
+				 $totalAmount=0;
+
+			$payry =$PDO->db_query("select * from pms_admin_users where status=1 and user_type=5");
 	       while($payRs = $PDO->db_fetch_array($payry)){
 		$salesAmiount=$PDO->getSingleresult("select sum(serviceprice) from #_crequirement where DATE(created_on)='".$date2."' and create_by='".$payRs['user_id']."'");
 if($salesAmiount!=0){
@@ -982,7 +982,7 @@ $stateDQuery=$PDO->db_query("select lid from #_crequirement where DATE(created_o
 if (!empty($stateDResult)) {
  $drIds = implode(',',$stateDResult);
  $staeRy="  pid IN ($drIds)";
-}  else { 
+}  else {
 	$staeRy="   pid IN (0)";
 }
 
@@ -991,20 +991,20 @@ if (!empty($stateDResult)) {
 	<tr>
                   <td>
 				  <a href="#" data-toggle="modal" data-target="#salesr<?=$payRs['user_id']?>"><?=$payRs['name']?></a>
-                 
+
                   <div class="modal fade" id="salesr<?=$payRs['user_id']?>">
                       <div class="modal-dialog" style="max-width:80%; width:80%">
-                        <div class="modal-content w-100 table-responsive"> 
-                          
+                        <div class="modal-content w-100 table-responsive">
+
                           <!-- Modal Header -->
-                          
+
                           <div class="modal-header">
                             <h4 class="modal-title">Sales Detail</h4>
                             <button type="button" class="close" data-dismiss="modal">&times;</button>
                           </div>
-                          
+
                           <!-- Modal body -->
-                          
+
                           <div class="modal-body table-responsive">
                             <table class="table table-bordered table-responsive-xs table-responsive-sm  table-striped custom-table">
                               <thead>
@@ -1019,20 +1019,20 @@ if (!empty($stateDResult)) {
                                 </tr>
                               </thead>
                               <tbody>
-                              <?php $payleadsry =$PDO->db_query("select * from #_leads where  $staeRy"); 
+                              <?php $payleadsry =$PDO->db_query("select * from #_leads where  $staeRy");
 							  $cc=1;
 							  $total_price = 0;
 							   $r_price = 0;
 							   $noofinvoice = 0;
 	       while($leadspayRs = $PDO->db_fetch_array($payleadsry)){
-			 
+
 			 $invoiamount=$PDO->getSingleresult("select sum(serviceprice) from #_crequirement where create_by='".$payRs['user_id']."' and DATE(created_on)='".$date2."' and lid='".$leadspayRs['pid']."'");
 		$recieAmount=$PDO->getSingleresult("select sum(qAmount) from #_paymentdetails where sentBy='".$payRs['user_id']."' and DATE(created_on)='".$date2."' and lid='".$leadspayRs['pid']."'");
-		
-			 
-			 $total_price += $invoiamount; 
-		   $r_price += $recieAmount; 
-			$noofinvoice += 1; 
+
+
+			 $total_price += $invoiamount;
+		   $r_price += $recieAmount;
+			$noofinvoice += 1;
 			    ?>
                                 <tr>
                                   <td><?=$cc?> </td>
@@ -1043,28 +1043,28 @@ if (!empty($stateDResult)) {
                                   <td>Rs <?=$recieAmount?></td>
                                   <td>Rs <?=(int)$invoiamount - (int)$recieAmount?></td>
                                 </tr>
-                               <?php $cc++;} ?> 
+                               <?php $cc++;} ?>
                               </tbody>
                             </table>
                           </div>
-                          
+
                           <!-- Modal footer -->
-                          
+
                           <div class="modal-footer">
                             <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
                           </div>
                         </div>
                       </div>
                     </div>
-                  
+
 				  </td>
                   <td>Rs <?=$salesAmiount==''?'0':$salesAmiount;?></td>
-              
+
                 </tr>
 	<?php }	} ?>
-                
-                
-                
+
+
+
                 <tr class="text-bold">
                   <td></td>
                  <td>Rs <?=$totalAmount==''?'0':$totalAmount;?></td>
@@ -1072,21 +1072,21 @@ if (!empty($stateDResult)) {
                 <?php } else {?>
 				  <tr class="text-bold text-center">
                   <td colspan="2">No Record Found!</td>
-                </tr>	
-					
+                </tr>
+
 					<?php } ?>
               </tbody>
             </table>
-          
+
         </div>
-        <!-- /# card --> 
+        <!-- /# card -->
       </div>
-      
+
     </div>
   </div>
-  
+
   <!-- /# row -->
-  
+
   </div>
   </div>
 </section>
@@ -1113,16 +1113,16 @@ if (!empty($stateDResult)) {
                 </tr>
               </thead>
               <tbody>
-                <?php  
+                <?php
 
-				 $date2 = date('Y-m-d'); 
+				 $date2 = date('Y-m-d');
 
 				 $jj=1;
 
-			$payry =$PDO->db_query("select * from #_pms_activity ".$folups." and status=2 and dates='".$date2."' and fstatus=0"); 
+			$payry =$PDO->db_query("select * from #_pms_activity ".$folups." and status=2 and dates='".$date2."' and fstatus=0");
 
 	       while($payRs = $PDO->db_fetch_array($payry)){
-     
+
 		 ?>
                 <tr>
                   <td><?=$jj?></td>
@@ -1157,15 +1157,15 @@ $('#example_filter label').before('<label class="ml-4">Search by Date<input type
 $('#followdate').datepicker( {dateFormat: 'yy-mm-dd',
   onSelect: function(dateText) {
     console.log("Selected date: " + dateText + "; input's current value: " + this.value);
-	
-	
+
+
 	data= {'followdate':this.value}
 $.ajax({
     type: "POST",
     url: "<?=SITE_PATH_ADM?>modules/leadsAjax.php",
     data: data,
     success: function(data) {
-	console.log(data);	
+	console.log(data);
 	$('#example').html(data);
 		},
     error: function() {
@@ -1181,7 +1181,7 @@ $.ajax({
 } );
 
 
-	</script> 
+	</script>
           </div>
         </div>
       </div>
@@ -1192,7 +1192,7 @@ $.ajax({
 
 <section class="mtb50">
   <div class="container ">
-    <div class="row"> 
+    <div class="row">
       <!-- /# column -->
       <div class="col-sm-12">
         <div class="card">
@@ -1213,7 +1213,7 @@ $.ajax({
               </div>
 
  <script>
- 
+
             function pkgsale(dates){
 	data= {'saledate':dates}
 $.ajax({
@@ -1234,7 +1234,7 @@ $.ajax({
               </div>
           </div>
 
-          
+
             <table class="table table-bordered table-responsive-xs table-responsive-sm  table-striped custom-table">
               <thead>
                 <tr>
@@ -1247,12 +1247,12 @@ $.ajax({
                 </tr>
               </thead>
               <tbody id="salescontent">
-                
-                 <?php 
-		   $sry =$PDO->db_query("select * from #_product_manager where status=1"); 
+
+                 <?php
+		   $sry =$PDO->db_query("select * from #_product_manager where status=1");
 		   $num=1;
 	       while($sRs = $PDO->db_fetch_array($sry)){
-			
+
 		 $scnt2=$PDO->getSingleresult("select count(*) from #_leads  where service='".$sRs['pid']."' and salesecutiveid='".$_SESSION["AMD"][0]."' and DATE(created_on)>'2018-09-12'");
 	 $sequotion=$PDO->getSingleresult("select sum(serviceprice) from #_crequirement where  create_by='".$_SESSION["AMD"][0]."' and serviceid='".$sRs['pid']."' and DATE(created_on)>'2018-09-12'");
 		$serecievedAmount=$PDO->getSingleresult("select sum(qAmount) from #_paymentdetails where sentBy='".$_SESSION["AMD"][0]."' and serviceid='".$sRs['pid']."' and dates>'2018-09-12'");
@@ -1266,15 +1266,15 @@ $.ajax({
                   <td>Rs <?=(int)$sequotion - (int)$serecievedAmount?></td>-->
                   <td><?=$scnt2?></td>
                 </tr>
-				
+
 				<?php
 		  $num++; }}
-		  
-		   ?> 
-                
+
+		   ?>
+
               </tbody>
             </table>
-          
+
         </div>
       </div>
     </div>
@@ -1301,13 +1301,13 @@ $.ajax({
                 </tr>
               </thead>
               <tbody>
-                <?php $payleadsry =$PDO->db_query("select * from #_leads where salesecutiveid='".$_SESSION["AMD"][0]."'"); 
+                <?php $payleadsry =$PDO->db_query("select * from #_leads where salesecutiveid='".$_SESSION["AMD"][0]."'");
 							  $ccc=1;
 	       while($leadspayRs = $PDO->db_fetch_array($payleadsry)){
-			   
+
 			    $invoiamount1=$PDO->getSingleresult("select sum(serviceprice) from #_crequirement where create_by='".$_SESSION["AMD"][0]."' and lid='".$leadspayRs['pid']."'");
 		$recieAmount1=$PDO->getSingleresult("select sum(qAmount) from #_paymentdetails where sentBy='".$_SESSION["AMD"][0]."' and lid='".$leadspayRs['pid']."'");
-			 if( $invoiamount1>$recieAmount1) { 
+			 if( $invoiamount1>$recieAmount1) {
 			    ?>
                 <tr>
                     <td><?=$ccc?> </td>
@@ -1316,18 +1316,18 @@ $.ajax({
                     <td>Rs <?=$invoiamount1?></td>
                     <td>Rs <?=$recieAmount1?></td>
                     <td>Rs <?=(int)$invoiamount1 - (int)$recieAmount1?></td>
-                  
+
                 </tr>
-                <?php $ccc++;}} ?> 
+                <?php $ccc++;}} ?>
               </tbody>
             </table>
-            
+
             <script>
 
 	$(document).ready(function() {
 
     $('#example2').DataTable({
-		
+
     "bLengthChange": false,
     "bFilter": true,
     "bInfo": false,
@@ -1339,8 +1339,8 @@ $.ajax({
 
 } );
 
-	</script> 
-         
+	</script>
+
         </div>
       </div>
     </div>
@@ -1361,17 +1361,17 @@ $.ajax({
             <table class="table table-bordered table-responsive-xs table-responsive-sm mt15  table-striped custom-table" id="monthwisesale2">
               <thead>
                 <tr>
-              
-	<?php 
+
+	<?php
 	for ($i = 6; $i >= 0; $i--) {
 		 $months=date("M-y", strtotime( date( 'Y-m-01' )." -$i months"));
 		$datam=date('m-Y',strtotime($months));
 		$Period = explode('-',$datam);
-	
+
 			    $salesAmiount=$PDO->getSingleresult("select sum(serviceprice) from #_crequirement where YEAR(created_on)='".$Period[1]."' and MONTH(created_on)='".$Period[0]."' and create_by='".$_SESSION["AMD"][0]."'");
 
 			   $saleamount .=' <td> Rs '.($salesAmiount==''?'0':$salesAmiount).'</td>';
-			   
+
 			   $totalquotion += $salesAmiount;
 	 ?>
                   <th><?=date('F Y',strtotime($months))?></th>
@@ -1394,7 +1394,7 @@ $.ajax({
     </div>
   </div>
 </section>
-<?php 
+<?php
 
 
 } else { ?>
@@ -1420,34 +1420,34 @@ $.ajax({
               </thead>
               <tbody>
                 <?php
-			
-				
-				 $pendingry =$PDO->db_query("select * from pms_admin_users where status=1 and user_type=5 ".$adminqry.""); 
+
+
+				 $pendingry =$PDO->db_query("select * from pms_admin_users where status=1 and user_type=5 ".$adminqry."");
 				$sk=1;
 	       while($pendingRs = $PDO->db_fetch_array($pendingry)){
 			 $ssamount=$PDO->getSingleresult("select sum(serviceprice) from #_crequirement where create_by='".$pendingRs['user_id']."'");
-		$rrrAmount=$PDO->getSingleresult("select sum(qAmount) from #_paymentdetails where sentBy='".$pendingRs['user_id']."' "); 
+		$rrrAmount=$PDO->getSingleresult("select sum(qAmount) from #_paymentdetails where sentBy='".$pendingRs['user_id']."' ");
 		if(($ssamount-$rrrAmount)!=0){
 			    ?>
                 <tr>
                   <td><?=$sk?></td>
-                  <td><a href="#" data-toggle="modal" data-target="#paymentpending<?=$pendingRs['user_id']?>"><?=$pendingRs['name']?></a> 
-                    
+                  <td><a href="#" data-toggle="modal" data-target="#paymentpending<?=$pendingRs['user_id']?>"><?=$pendingRs['name']?></a>
+
                     <!-- The Modal -->
-                    
+
                     <div class="modal fade" id="paymentpending<?=$pendingRs['user_id']?>">
                       <div class="modal-dialog" style="max-width:80%; width:80%">
-                        <div class="modal-content w-100 table-responsive"> 
-                          
+                        <div class="modal-content w-100 table-responsive">
+
                           <!-- Modal Header -->
-                          
+
                           <div class="modal-header">
                             <h4 class="modal-title">Payment Pending</h4>
                             <button type="button" class="close" data-dismiss="modal">&times;</button>
                           </div>
-                          
+
                           <!-- Modal body -->
-                          
+
                           <div class="modal-body table-responsive">
                             <table class="table table-bordered table-responsive-xs table-responsive-sm  table-striped custom-table">
                               <thead>
@@ -1462,20 +1462,20 @@ $.ajax({
                                 </tr>
                               </thead>
                               <tbody>
-                              <?php $payleadsry =$PDO->db_query("select * from #_leads where salesecutiveid='".$pendingRs['user_id']."'"); 
+                              <?php $payleadsry =$PDO->db_query("select * from #_leads where salesecutiveid='".$pendingRs['user_id']."'");
 							  $cc=1;
 							  $total_price = 0;
 							   $r_price = 0;
 							   $noofinvoice = 0;
 	       while($leadspayRs = $PDO->db_fetch_array($payleadsry)){
-			 
+
 			 $invoiamount=$PDO->getSingleresult("select sum(serviceprice) from #_crequirement where create_by='".$pendingRs['user_id']."' and lid='".$leadspayRs['pid']."'");
 		$recieAmount=$PDO->getSingleresult("select sum(qAmount) from #_paymentdetails where sentBy='".$pendingRs['user_id']."' and lid='".$leadspayRs['pid']."'");
-		
-			 if( $invoiamount>$recieAmount) { 
-			 $total_price += $invoiamount; 
-		   $r_price += $recieAmount; 
-			$noofinvoice += 1; 
+
+			 if( $invoiamount>$recieAmount) {
+			 $total_price += $invoiamount;
+		   $r_price += $recieAmount;
+			$noofinvoice += 1;
 			    ?>
                                 <tr>
                                   <td><?=$cc?> </td>
@@ -1486,13 +1486,13 @@ $.ajax({
                                   <td>Rs <?=$recieAmount?></td>
                                   <td>Rs <?=(int)$invoiamount - (int)$recieAmount?></td>
                                 </tr>
-                               <?php $cc++;}} ?> 
+                               <?php $cc++;}} ?>
                               </tbody>
                             </table>
                           </div>
-                          
+
                           <!-- Modal footer -->
-                          
+
                           <div class="modal-footer">
                             <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
                           </div>
@@ -1501,12 +1501,12 @@ $.ajax({
                     </div></td>
                   <td> <?=$noofinvoice?> </td>
                   <td>Rs  <?=(int)$total_price - (int)$r_price?></td>
-                 
+
                 </tr>
 				<?php $sk++;}} ?>
-                
+
               </tbody>
-              
+
               <!--     <tfoot>
 
             <tr>
@@ -1528,7 +1528,7 @@ $.ajax({
             </tr>
 
         </tfoot>-->
-              
+
             </table>
             <script>
 
@@ -1538,7 +1538,7 @@ $.ajax({
 
 } );
 
-	</script> 
+	</script>
           </div>
         </div>
       </div>
@@ -1578,26 +1578,26 @@ $.ajax({
             <div class="col-sm-3">
               <select class="form-control" onChange="getmonthwisesale(this.value);">
               <?php for ($i = 0; $i <= 12; $i++) {
-				  
+
 				  $months=date("M-y", strtotime( date( 'Y-m-01' )." -$i months"));
-	?>  
+	?>
 	 <option value="<?=date('m-Y',strtotime($months))?>"><?=$months?></option>
 	<?php
 } ?>
-              
+
               </select>
             </div>
           </div>
             <table class="table table-bordered table-responsive-xs table-responsive-sm mt15  table-striped custom-table" id="monthwisesale">
               <thead>
                 <tr>
-                <?php $monthilyry =$PDO->db_query("select * from pms_admin_users where status=1 and user_type=5 ".$adminqry.""); 
+                <?php $monthilyry =$PDO->db_query("select * from pms_admin_users where status=1 and user_type=5 ".$adminqry."");
 	       while($monthRs = $PDO->db_fetch_array($monthilyry)){
-			   
+
 			    $quotion=$PDO->getSingleresult("select sum(serviceprice) from #_crequirement where YEAR(created_on)='".date('Y')."' and MONTH(created_on)='".date('m')."' and create_by='".$monthRs['user_id']."'");
- 
+
 			   $saleamount .=' <td> Rs '.($quotion==''?'0':$quotion).'</td>';
-			   
+
 			   $totalquotion += $quotion;
 	 ?>
                   <th><?=$monthRs['name']?></th>
@@ -1631,14 +1631,14 @@ $.ajax({
                 <h2 class="text-right">Profit Statement Day wise</h2>
               </div>
             </div>
-          
+
             <div class="col-sm-3">
-          
+
                 <div class="input-group">
                   <input type="text" class="form-control datetimepicker-input pl-2 pr-2" id="profitdates"  placeholder="Select Date"/>
                   <div class="input-group-append">
                     <div class="input-group-text"><i class="fa fa-calendar"></i></div>
-                  
+
                 </div>
               </div>
             </div>
@@ -1646,7 +1646,7 @@ $.ajax({
             <table class="table table-bordered table-responsive-xs table-responsive-sm mt15  table-striped custom-table" id="profitdaywise">
               <thead>
                 <tr>
-                <?php $monthilyry =$PDO->db_query("select * from pms_admin_users where status=1 and user_type=5 ".$adminqry.""); 
+                <?php $monthilyry =$PDO->db_query("select * from pms_admin_users where status=1 and user_type=5 ".$adminqry."");
 	       while($monthRs = $PDO->db_fetch_array($monthilyry)){
 			   $quotion1=$PDO->getSingleresult("select sum(qAmount) from #_paymentdetails where YEAR(dates)='".date('Y')."' and MONTH(dates)='".date('m')."' and sentBy='".$monthRs['user_id']."'");
 			   $saleamount2 .=' <td> Rs '.($quotion1==''?'0':$quotion1).'</td>';
@@ -1674,7 +1674,7 @@ $.ajax({
 </section>
 <?php } }?>
 <?php //include('cuts/footer.inc.php');  ?>
-<script src="https://code.jquery.com/ui/1.12.0/jquery-ui.min.js"></script> 
+<script src="https://code.jquery.com/ui/1.12.0/jquery-ui.min.js"></script>
 <script src='js/timepicker.js'></script>
 <link rel="stylesheet" href="https://code.jquery.com/ui/1.10.2/themes/smoothness/jquery-ui.css">
 <link rel="stylesheet" href="css/timepicker.css">
@@ -1682,15 +1682,15 @@ $.ajax({
 $('#profitdates').datepicker( {maxDate: 0,dateFormat: 'yy-mm-dd',
   onSelect: function(dateText) {
     console.log("Selected date: " + dateText + "; input's current value: " + this.value);
-	
-	
+
+
 	data= {'profitdates':this.value}
 $.ajax({
     type: "POST",
     url: "<?=SITE_PATH_ADM?>modules/leadsAjax.php",
     data: data,
     success: function(data) {
-	console.log(data);	
+	console.log(data);
 	$('#profitdaywise').html(data);
 		},
     error: function() {
@@ -1732,13 +1732,13 @@ function validate4msg(){
 
 				   }else{
 
-				   $('#error4msg').show()   
+				   $('#error4msg').show()
 
 				   }
 
             });
 
-       
+
 
 		}
 
@@ -1784,7 +1784,7 @@ function checkmsg(msg)
 
     var re = /^[a-zA-Z0-9~@&#$!"\/;',%^*^\n()_+=[\]{}|\\,.?: -]{10,}$/;
 
-	
+
 
     if(!re.test(msg)) {
 

@@ -699,62 +699,23 @@ class FuncsAmd
 
 
 
+public function baseurl(?string $string): string
+{
+    $string = $string ?? ''; // Handle null
 
-	public function baseurl($string)
-	{
+    if (function_exists('transliterator_transliterate')) {
+        $string = transliterator_transliterate('Any-Latin; Latin-ASCII', $string);
+    }
 
+    $string = mb_strtolower($string, 'UTF-8');
+    $string = preg_replace('/\s+/', ' ', $string);
+    $string = trim($string);
+    $string = str_replace(' ', '-', $string);
+    $string = preg_replace('/[^a-z0-9\-]/', '', $string);
+    $string = preg_replace('/-+/', '-', $string);
 
-
-		$string = strtolower($string);
-
-		$string = preg_replace('/\s+/', ' ', $string);
-
-		$string = trim($string);
-
-		$string = str_replace(' ', '-', $string);
-
-		$string = preg_replace('/[^A-Za-z0-9\-]/', '', $string);
-
-		$string = preg_replace('/-+/', '-', $string);
-
-
-
-		/*$vals = str_replace(" ", "",trim(strtolower($vals)));
-
-		$vals = str_replace("/", "",$vals);
-
-		$vals = str_replace("(", "",$vals);
-
-		$vals = str_replace(")", "",$vals);
-
-		$vals = str_replace("&", "",$vals);
-
-		$vals = str_replace("#", "",$vals);
-
-		$vals = str_replace("---", "",$vals);
-
-		$vals = str_replace("--", "",$vals);
-
-		$vals = str_replace("-", "",$vals);
-
-		$vals = str_replace("&shy;", "",$vals);
-
-		$vals = str_replace("&minus;", "",$vals);
-
-		$vals = str_replace("'", "",$vals);
-
-		$vals = str_replace('"', "",$vals);
-
-		$vals = str_replace(" –", "",$vals);
-
-		$vals = str_replace("+", "",$vals);
-
-		$vals = str_replace(",", "",$vals);
-
-		*/
-
-		return $string;
-	}
+    return $string;
+}
 
 
 

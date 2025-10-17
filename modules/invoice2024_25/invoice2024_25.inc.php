@@ -1,424 +1,228 @@
 <?php
 
-define('tblName', 'invoice2024_25');
+define("tblName", "invoice2024_25");
+
+class Pages extends dbc_safe
+{
+  public function add($data)
+{
+    echo "<pre>=== DEBUG MODE ENABLED ===<br>";
+
+    // Step 1: Initial data
+    print_r($data);
+
+    // Step 2: Set meta info
+    $data['created_on'] = date("Y-m-d H:i:s");
+    $data['create_by'] = $_SESSION["AMD"][0] ?? '';
+    $data['salesecutiveid'] = $_SESSION["AMD"][0] ?? '';
+
+    // Step 3: Shortorder
+    $shortorderQuery = "SELECT MAX(shortorder) FROM #_" . tblName;
+    echo "Shortorder Query: " . $shortorderQuery . "<br>";
+    $shortorder = parent::getSingleresult($shortorderQuery) + 1;
+    $data['shortorder'] = $shortorder;
+
+    echo "Shortorder value: " . $shortorder . "<br>";
+
+    // Step 4: Check duplicate
+    if (!empty($data["inviceno"])) {
+        $checkSql = "SELECT * FROM #_" . tblName . " WHERE inviceno = '" . trim($data["inviceno"]) . "'";
+    } else {
+        $checkSql = "SELECT * FROM #_" . tblName . " WHERE created_on = '" . $data['created_on'] . "'";
+    }
+
+    echo "Duplicate check query: " . $checkSql . "<br>";
+
+    $checkQuery = parent::db_query($checkSql);
+    echo "Duplicate row count: " . $checkQuery->rowCount() . "<br>";
+
+    // Step 5: If record not found, insert it
+    if ($checkQuery->rowCount() === 0) {
+        echo "🟢 No duplicate found. Proceeding to insert...<br>";
+
+        // Show insert data
+        print_r($data);
+
+        // Try inserting
+try {
+    // 🟢 Step 1: Build Insert Query manually using PDO
+    $table = tblName; // example: "invoice2024_25"
+    $columns = implode(", ", array_keys($data));
+    $placeholders = ":" . implode(", :", array_keys($data));
+
+    // Replace prefix if needed (optional)
+    $sql = "INSERT INTO #_{$table} ($columns) VALUES ($placeholders)";
+    $sql = str_replace("#_", tb_Prefix, $sql); // <-- Change 'your_prefix_' to your actual DB prefix (like 'crm_' or '')
+    echo "<b>SQL Query:</b> $sql<br>";
+
+    $stmt = $GLOBALS["dbcon"]->prepare($sql);
+    $stmt->execute($data);
+
+    // 🟢 Step 2: Get last inserted ID
+    $insertid = $GLOBALS["dbcon"]->lastInsertId();
+    echo "<b>Insert ID:</b> " . $insertid . "<br>";
+
+} catch (PDOException $e) {
+    echo "❌ <b>Insert error:</b> " . $e->getMessage() . "<br>";
+    exit;
+}
+
+// 🟡 Step 3: Verify Insert
+if (empty($insertid) || $insertid == 0) {
+    echo "❌ Insert ID empty — insert failed!<br>";
+    exit;
+} else {
+    echo "✅ Record inserted successfully with ID: " . $insertid . "<br>";
+}
+
+// 🟢 Step 4: Update invoice no if required
+$updateData = [
+    "inviceno" => $data["inviceno"] ?? ''
+];
+
+echo "Updating invoice no...<br>";
+print_r($updateData);
+
+try {
+    $table = tblName;
+    $setPart = implode(", ", array_map(fn($key) => "$key = :$key", array_keys($updateData)));
+    $updateSql = "UPDATE #_{$table} SET $setPart WHERE pid = :pid";
+    $updateSql = str_replace("#_", tb_Prefix, $updateSql); // same prefix replacement
+    $stmt = $GLOBALS["dbcon"]->prepare($updateSql);
+    $updateData['pid'] = $insertid;
+    $stmt->execute($updateData);
+    echo "✅ Invoice updated successfully.<br>";
+} catch (PDOException $e) {
+    echo "❌ Update error: " . $e->getMessage() . "<br>";
+}
+
+// 🟢 Step 5: If lid exists, update related tables
+if (!empty($data["lid"])) {
+    echo "Updating leads and project tables...<br>";
+
+    $leadsdata = [
+        "invoiceno" => $data["inviceno"] ?? '',
+        "invoiceid" => $insertid
+    ];
+
+    // Update leads table
+    try {
+        $sqlLeads = "UPDATE #_leads SET invoiceno = :invoiceno, invoiceid = :invoiceid WHERE pid = :pid";
+        $sqlLeads = str_replace("#_", tb_Prefix, $sqlLeads);
+        $stmt = $GLOBALS["dbcon"]->prepare($sqlLeads);
+        $leadsdata["pid"] = $data["lid"];
+        $stmt->execute($leadsdata);
+        echo "✅ Leads table updated.<br>";
+    } catch (PDOException $e) {
+        echo "❌ Leads update error: " . $e->getMessage() . "<br>";
+    }
+
+    // Update project table if exists
+    $orderQuery = parent::db_query("SELECT * FROM #_project WHERE lid='" . $data["lid"] . "'");
+    echo "Project found rows: " . $orderQuery->rowCount() . "<br>";
+
+    if ($orderQuery->rowCount() > 0) {
+        try {
+            $sqlProj = "UPDATE #_project SET invoiceno = :invoiceno, invoiceid = :invoiceid WHERE lid = :lid";
+            $sqlProj = str_replace("#_", tb_Prefix, $sqlProj);
+            $stmt = $GLOBALS["dbcon"]->prepare($sqlProj);
+            $leadsdata["lid"] = $data["lid"];
+            $stmt->execute($leadsdata);
+            echo "✅ Project table updated.<br>";
+        } catch (PDOException $e) {
+            echo "❌ Project update error: " . $e->getMessage() . "<br>";
+        }
+    }
+}
+
+parent::sessset("Record has been added", "s");
+return [1, $insertid];
 
 
-class Pages extends dbc {
 
-    public function add($data) {
-
-
-
-        @extract($data);
-
-
-
-        $query = parent::db_query("select * from #_" . tblName . " where created_on ='" . $created_on . "' ");
+    } else {
+        echo "⚠️ Duplicate found. Record not inserted.<br>";
+        parent::sessset("Record has already been added", "e");
+        return [0];
+    }
+}
 
 
+    public function update($data)
+    {
+        $updateid = $data['updateid'] ?? 0;
+        $created_on = $data['created_on'] ?? '';
 
-        if ($query->rowCount() == 0) {
-            $data['created_on'] = date('Y-m-d H:i:s');
+        $query = parent::db_query(
+            "SELECT * FROM #_" . tblName . " WHERE created_on='" . $created_on . "' AND pid!='" . $updateid . "'"
+        );
 
-
-
-            $data['create_by'] = $_SESSION["AMD"][0];
-
-
-
-            $data['salesecutiveid'] = $_SESSION["AMD"][0];
-            $data['shortorder'] = parent::getSingleresult("select max(shortorder) as shortorder from #_" . tblName . " where 1=1 ") + 1;
-
-
-
-            parent::sqlquery("rs", tblName, $data);
-
-
-
-            $insertid = $GLOBALS['dbcon']->lastInsertId();
-
-            $upids = $insertid;
-
-
-
-            if ($upids < 10) {
-
-                $zero = '000';
-            } else if ($upids < 100) {
-
-                $zero = '00';
-            } else if ($upids < 1000) {
-
-                $zero = '0';
-            } else {
-
-                $zero = '';
+        if ($query->rowCount() === 0) {
+            // Filter arrays
+            foreach (['itemservice','itempriceservice','itemadon','itempriceadon'] as $key) {
+                $data[$key] = !empty($data[$key]) ? array_filter($data[$key]) : '';
             }
 
+            $data["modified_on"] = date("Y-m-d H:i:s");
+            $data["modified_by"] = ($_SESSION["AMD"][0] ?? '') . ":" . ($data["modified_by"] ?? '');
 
-
-            $upid2 = $upids;
-
-
-
-
-
-            //$POST['inviceno']='RW/'.date('Y').'-'.date('y', strtotime('+1 year')).'/'.($upid2+23);
-
-            $POST['inviceno'] = $data['inviceno'];
-            //$POST['inviceno']='GVSD/'.date('Y').'-'.date('y', strtotime('+1 year')).'/'.($zero.$upid2);
-
-
-//            if ($_SERVER['REMOTE_ADDR'] == '182.69.125.195') {
-//                echo "<pre>";
-//                print_r($POST);
-//                exit;
-//            }
-            parent::sqlquery("rs", tblName, $POST, 'pid', $insertid);
-
-            if ($data['lid'] != '') {
-
-                $leadsdata['invoiceno'] = $POST['inviceno'];
-
-                $leadsdata['invoiceid'] = $updid;
-
-
-
-                parent::sqlquery("rs", 'leads', $leadsdata, 'pid', $data['lid']);
-
-                $orderQuery = parent::db_query("select * from #_project where lid='" . $data['lid'] . "'");
-
-                if ($orderQuery->rowCount() > 0) {
-
-
-
-                    parent::sqlquery("rs", 'project', $leadsdata, 'lid', $data['lid']);
-                }
-            }
-
-
-
-
-
-            parent::sessset('Record has been added', 's');
-
-
-
-            //parent::admsendmail('ajaymaurya.rw@gmail.com', 'registrationwala', 'Record added !');
-
-
-
-            $flag = 1;
-
-
-
-            $invoiceid = $insertid;
-
-
-
-            $returnval = array($flag, $invoiceid);
+            parent::safe_sqlquery(tblName, $data, 'exe', 'pid', $updateid);
+            parent::sessset("Record has been updated", "s");
+            return 1;
         } else {
-
-
-
-            parent::sessset('Record has already added', 'e');
-
-
-
-            $flag = 0;
-
-
-
-            $returnval = array($flag);
+            parent::sessset("Record has already added", "e");
+            return 0;
         }
-
-
-
-        return $returnval;
     }
 
-    public function update($data) {
-
-
-
-        @extract($data);
-
-
-
-        $query = parent::db_query("select * from #_" . tblName . " where created_on ='" . $created_on . "' and pid!='" . $updateid . "' ");
-
-
-
-        if ($query->rowCount() == 0) {
-
-
-
-            //$data['password']=$this->password($data['password']);
-            // parent::sqlquery("rs",'admin_users',$data);
-
-
-
-            $data['itemservice'] = $data['itemservice'] ? array_filter($data['itemservice']) : '';
-
-
-
-            $data['itempriceservice'] = $data['itempriceservice'] ? array_filter($data['itempriceservice']) : '';
-
-
-
-            $data['itemadon'] = $data['itemadon'] ? array_filter($data['itemadon']) : '';
-
-
-
-            $data['itempriceadon'] = $data['itempriceadon'] ? array_filter($data['itempriceadon']) : '';
-
-
-
-
-
-
-
-            $data['modified_on'] = date('Y-m-d H:i:s');
-
-
-
-            $data['modified_by'] = $modified_by . ':' . $_SESSION["AMD"][0];
-
-
-
-            parent::sqlquery("rs", tblName, $data, 'pid', $updateid);
-
-
-
-            parent::sessset('Record has been updated', 's');
-
-
-
-            // parent::admsendmail('ajaymaurya.rw@gmail.com', 'registrationwala', 'Record updated !');
-
-
-
-            $flag = 1;
-        } else {
-
-
-
-            parent::sessset('Record has already added', 'e');
-
-
-
-            $flag = 0;
-        }
-
-
-
-
-
-
-
-        return $flag;
-    }
-
-    public function delete($updateid) {
-
-
-
+    public function delete($updateid)
+    {
         if (is_array($updateid)) {
-
-
-
-            $updateid = implode(',', $updateid);
+            $updateid = implode(",", $updateid);
         }
 
-
-
-
-
-
-
-        /* $delete_image=parent::getSingleresult("select image from #_".tblName." where pid='".$updateid."'");
-
-
-
-          if($delete_image!='')
-
-
-
-          {
-
-
-
-          @unlink(UP_FILES_FS_PATH."/pages/".$delete_image);
-
-
-
-          @unlink(UP_FILES_FS_PATH."/pages/900X400/".$delete_image);
-
-
-
-          } */
-
-
-
-
-
-
-
-        parent::db_query("delete from #_" . tblName . " where pid in ($updateid)");
+        parent::db_query("DELETE FROM #_" . tblName . " WHERE pid IN ($updateid)");
     }
 
-    public function status($updateid, $status) {
-
-
-
+    public function status($updateid, $status)
+    {
         if (is_array($updateid)) {
-
-
-
-            $updateid = implode(',', $updateid);
+            $updateid = implode(",", $updateid);
         }
 
-
-
-
-
-
-
-        parent::db_query("update  #_" . tblName . " set status='" . $status . "' where pid in ($updateid)");
+        parent::db_query(
+            "UPDATE #_" . tblName . " SET status='" . $status . "' WHERE pid IN ($updateid)"
+        );
     }
 
-    public function display($start, $pagesize, $fld, $otype, $search_data, $zone, $mtype, $extra, $extra1, $extra2) {
-
-
-
+    public function display($start, $pagesize, $fld = '', $otype = 'DESC', $search_data = '', $zone = '', $mtype = '', $extra = '', $extra1 = '', $extra2 = '')
+    {
         $start = intval($start);
 
+        $zone = $_GET['zone'] ?? $zone;
+        $mtype = $_GET['mtype'] ?? $mtype;
+        $extra = $_GET['extra'] ?? $extra;
+        $extra1 = $_GET['extra1'] ?? $extra1;
+        $extra2 = $_GET['extra2'] ?? $extra2;
+        $wh = $_GET['wh'] ?? '';
 
+        $columns = "SELECT * ";
+        $sql = " FROM #_" . tblName . " WHERE 1 $zone $mtype $extra $extra1 $extra2 $wh ";
 
-        $columns = "select * ";
+        $order_by = $fld ?: 'pid';
+        $order_by2 = $otype ?: 'DESC';
 
+        $sql_count = "SELECT COUNT(*) " . $sql;
 
-
-
-
-
-
-        if (trim($search_data) != '') {
-
-
-
-            $wh = " and (rlmanager like '%" . $search_data . "%' or customername like '%" . $search_data . "%' or customeremail like '%" . $search_data . "%' or customerno like '%" . $search_data . "%' or inviceno like '%" . $search_data . "%'or hgrasstotal like '%" . $search_data . "%') ";
-        }
-
-
-
-        if (trim($search_data) == 'paid') {
-
-
-
-            $wh = " and pstatus ='1'";
-        }
-
-
-
-        if (trim($search_data) == 'unpaid') {
-
-
-
-            $wh = " and pstatus ='0'";
-        }
-
-
-
-        if (trim($search_data) == 'partial') {
-
-
-
-            $wh = " and pstatus ='2'";
-        }
-
-
-
-        $zone = "";
-        $mtype = "";
-        $extra = "";
-        $extra1 = "";
-        $extra2 = "";
-        $wh = "";
-
-        // Ensure variables are properly set if they come from GET/POST requests
-        $zone = isset($_GET['zone']) ? $_GET['zone'] : $zone;
-        $mtype = isset($_GET['mtype']) ? $_GET['mtype'] : $mtype;
-        $extra = isset($_GET['extra']) ? $_GET['extra'] : $extra;
-        $extra1 = isset($_GET['extra1']) ? $_GET['extra1'] : $extra1;
-        $extra2 = isset($_GET['extra2']) ? $_GET['extra2'] : $extra2;
-        $wh = isset($_GET['wh']) ? $_GET['wh'] : $wh;
-
-        // Construct SQL query
-
-
-        $sql = " FROM #_" . tblName . " WHERE 1 " . $zone . $mtype . $extra . $extra1 . $extra2 . $wh;
-
-
-
-// Ensure $order_by is defined, for example as an empty string
-if (!isset($order_by)) {
-    $order_by = '';
-}
-
-// Initialize variables if they are not already set
-if (!isset($order_by)) {
-    $order_by = '';
-}
-
-if (!isset($ord)) {
-    $ord = false;  // or set it to an appropriate default value
-}
-
-if (!isset($fld)) {
-    $fld = '';
-}
-
-// Now your ternary operation works without warnings:
-$order_by = ($order_by == '') ? (($ord) ? 'orders' : (($fld) ? $fld : 'pid')) : $order_by;
-
-
-
-if (!isset($order_by2)) {
-    $order_by2 = '';
-}
-
-$order_by2 = ($order_by2 == '') ? (($otype) ? $otype : 'DESC') : $order_by2;
-
-
-
-        $sql_count = "select count(*) " . $sql;
-
-
-
-        $sql .= "order by $order_by $order_by2 ";
-
-
-
-        $sql .= "limit $start, $pagesize ";
-
-
+        $sql .= " ORDER BY $order_by $order_by2 ";
+        $sql .= " LIMIT $start, $pagesize ";
 
         $sql = $columns . $sql;
 
-
-
         $result = parent::db_query($sql);
-
-
-
         $reccnt = parent::db_scalar($sql_count);
 
-
-
-        return array($result, $reccnt);
+        return [$result, $reccnt];
     }
-
 }
-
 ?>

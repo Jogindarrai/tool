@@ -1,97 +1,37 @@
 <?php
-///echo "SITE_FS_PATH: " . SITE_FS_PATH;
+
 include('../lib/config.inc.php');
 include('../login/login.inc.php');
 
-
-
-//print_r($_POST);
-
-
+// Check if user is already logged in
 if (!empty($_SESSION["AMD"][0])) {
-  $RW->redir(SITE_PATH_ADM . "index.php");
-  exit;
+    $RW->redir(SITE_PATH_ADM . "index.php");
+    exit;
 }
 
+// Process form submission
+if($RW->is_post_back()) {
+    $LOGU = new LoginUser();
+    $flag = $LOGU->login($_POST);
 
+    if($flag == 1) {
+        // Update login time
+        $otpquery = $PDO->db_query("SELECT * FROM pms_admin_users WHERE email ='".$_POST['email']."' AND status='1'");
+        $otprow = $PDO->db_fetch_array($otpquery);
+        $stlogintime = $otprow['logintime'] ? $otprow['logintime'] . ',"' . time() . '"' : '"' . time() . '"';
+        $PDO->db_query("UPDATE pms_admin_users SET logintime='" . $stlogintime . "' WHERE user_id ='" . $otprow['user_id'] . "'");
 
-
-
-
-$LOGU = new LoginUser();
-
-
-
-if($RW->is_post_back())
-
-{
-$otpquery =$PDO->db_query("select * from pms_admin_users where email ='".$_POST['email']."' and status='1'");
-$otprow = $PDO->db_fetch_array($otpquery);
-//print_r($otprow); exit;
-if($otprow['forotp']=='1' && !$_POST['otp']){
-
-
-		$digits = 6;
-		$otp= str_pad(rand(0, pow(10, $digits)-1), $digits, '0', STR_PAD_LEFT);
-		$to = '91'.$otprow['mobile'];
-		$_SESSION["OTP"]=$otp;
-		$msg ='Hello '.$otprow['name'].'! One time password for login into ERP is '.$otp.' Please use the otp to complete your login';
-	 	//$url = 'http://www.smsgatewaycenter.com/library/send_sms_2.php?UserName=regwala&Password=8gVhgnek&Type=Bulk&To='.urlencode($to).'&Mask=RGWALA&Message='.urlencode($msg);
-
-$curl = curl_init();
-
-curl_setopt_array($curl, array(
-  CURLOPT_URL => "http://control.msg91.com/api/sendotp.php?template=&otp_length=6&authkey=229297A3RSNnx95b6179ba&message=".$msg."&sender=RGWALA&mobile=".$to."&otp=".$otp."&otp_expiry=&email=".$otprow['email']."",
-  CURLOPT_RETURNTRANSFER => true,
-  CURLOPT_ENCODING => "",
-  CURLOPT_MAXREDIRS => 10,
-  CURLOPT_TIMEOUT => 30,
-  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-  CURLOPT_CUSTOMREQUEST => "POST",
-  CURLOPT_POSTFIELDS => "",
-  CURLOPT_SSL_VERIFYHOST => 0,
-  CURLOPT_SSL_VERIFYPEER => 0,
-));
-
-$response = curl_exec($curl);
-$err = curl_error($curl);
-
-curl_close($curl);
-
-
-$ADMIN->sessset('Please enter OTP, Send in your Registered Mobile', 's');
-					}else if(isset($_POST['otp']) && $otprow['forotp']=='1' && $_POST['otp']==$_SESSION["OTP"]){
-
-$flag = $LOGU->login($_POST);
-		$stlogintime=$otprow['logintime']?$otprow['logintime'].',"'.time().'"':'"'.time().'"';
-		$PDO->db_query("UPDATE pms_admin_users SET logintime='".$stlogintime."' where user_id ='".$otprow['user_id']."'");
-
-$RW->redir(SITE_PATH_ADM."index.php");
-
-
-				}
-
-        else if($_POST['otp']!='' && $_SESSION["OTP"]!=$_POST['otp'] && $otprow['forotp']=='1'){
-$ADMIN->sessset('Incorrect OTP! Please Re-Login', 'e');
-$RW->redir(SITE_PATH_ADM."index.php");
-						}
-
-            else{
-
-$flag = $LOGU->login($_POST);
-		$stlogintime=$otprow['logintime']?$otprow['logintime'].',"'.time().'"':'"'.time().'"';
-		$PDO->db_query("UPDATE pms_admin_users SET logintime='".$stlogintime."' where user_id ='".$otprow['user_id']."'");
-
-$RW->redir(SITE_PATH_ADM."index.php");
-
-						}
-
-
-
-
+        // Redirect to dashboard
+        $RW->redir(SITE_PATH_ADM . "index.php");
+        exit;
+    } else {
+        $ADMIN->sessset('Email and password is incorrect.', 'e');
+        $RW->redir(SITE_PATH_ADM . "/login/");
+        exit;
+    }
 }
-
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
