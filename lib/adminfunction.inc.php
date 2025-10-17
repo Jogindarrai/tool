@@ -277,15 +277,22 @@ class FuncsAmd
 		return '<a href="' . SITE_PATH_ADM . 'index.php?comp=' . $comp . '&mode=add&uid=' . $pid . '&' . $sub . '=' . $sid . '"><img src="' . SITE_PATH_ADM . 'images/icon_edit.png" alt="Edit Record" title="Edit Record"/></a><a href="' . SITE_PATH_ADM . 'index.php?comp=' . $comp . '&uid=' . $pid . '&action=del&' . $sub . '=' . $sid . '" onclick="return confirm(\'Do you want delete this record?\');"><img src="' . SITE_PATH_ADM . 'images/delete-icon.png"  alt="Delete Record"  title="Delete Record"/></a>';
 	}
 
-	public function action($comp, $pid)
-	{
+public function action($comp, $pid)
+{
+    $start = isset($_GET['start']) ? "&start=" . $_GET['start'] : "";
 
+    // Edit link
+    $editLink = '<a href="' . SITE_PATH_ADM . 'index.php?comp=' . $comp . $start . '&mode=add&uid=' . $pid . '"><i class="fa fa-edit"></i></a>';
 
+    // Delete form
+    $deleteForm = '<form method="post" style="display:inline;" onsubmit="return confirm(\'Do you want to delete this record?\');">
+                       <input type="hidden" name="uid" value="' . $pid . '">
+                       <input type="hidden" name="action" value="del">
+                       <button type="submit" style="border:none;background:none;padding:0;"><i class="fa fa-trash"></i></button>
+                   </form>';
 
-		//return '<table border="0" cellpadding="0" cellspacing="0"><tr><td><a href="'.$vars.'&id='.$ids.'"><img src="'.SITE_PATH_ADM.'images/edit-btn.jpg" alt="Edit record" title="Edit record"/></a></td><td style="padding-left:15px;"><a href="'.SITE_PATH_ADM.(($tags)?$tags:CPAGE).'?id='.$ids.'&action=del&view=true" onclick="return confirm(\'Do you want delete this record?\');"><img src="'.SITE_PATH_ADM.'images/delete-btn.jpg" alt="Delete record" title="Delete record"/></a></td></tr></table>';
-
-		return '<a href="' . SITE_PATH_ADM . 'index.php?comp=' . $comp . (($_GET[start]) ? '&start=' . $_GET[start] : '') . '&mode=add&uid=' . $pid . '"><i class="fa fa-edit"></i></a><a href="' . SITE_PATH_ADM . 'index.php?comp=' . $comp . (($_GET[start]) ? '&start=' . $_GET[start] : '') . '&uid=' . $pid . '&action=del" onclick="return confirm(\'Do you want delete this record?\');"><i class="fa fa-trash"></i></a>';
-	}
+    return $editLink . ' ' . $deleteForm;
+}
 
 	public function Eaction($comp, $pid)
 	{

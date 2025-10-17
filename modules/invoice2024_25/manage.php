@@ -92,6 +92,7 @@ list($result, $reccnt) = $PAGS->display($start, $pagesize, $fld, $otype, $search
 // Debug: Uncomment to check filters and records
 // echo "<pre>"; print_r(['filters'=>$filters, 'records_count'=>$reccnt]); exit;
 
+
 $people = ["2", "9", "33"];
 if (in_array($sessionId, $people)) {
 ?>
@@ -143,8 +144,18 @@ if ($reccnt > 0) {
   <td><?=date("d-m-Y", strtotime($invicedate))?></td>
   <td><?=$hgrasstotal?></td>
   <td>
+    <?php if (!empty($filename)): ?>
+    <a href="<?= SITE_PATH_ADM . _MODS . "/invoice2024_25/pdf/" . $filename . ".pdf" ?>"
+       download
+       class="btn btn-success">
+       <i class="fa fa-download"></i>
+    </a>
+<?php endif; ?>
+
     <a href="<?=SITE_PATH_ADM.'index.php?comp='.$comp.'&mode=add&uid='.$pid?>"><i class="fa fa-edit"></i></a>
     <a href="<?=SITE_PATH_ADM.'index.php?comp='.$comp.'&uid='.$pid.'&action=del'?>" onclick="return confirm('Do you want delete this record?');"><i class="fa fa-trash-o"></i></a>
+
+
   </td>
 </tr>
 <?php

@@ -1,120 +1,82 @@
 <?php
 include FS_ADMIN . _MODS . "/invoice2024_25/invoice2024_25.inc.php";
-$uid = isset($_GET["uid"]) ? $_GET["uid"] : null; // For GET requests
-// OR
-$uid = isset($_POST["uid"]) ? $_POST["uid"] : null; // For POST requests
-//182.69.11.18
 
-//        if($_SERVER['REMOTE_ADDR']=='182.69.11.18'){
+// Fetch UID safely from GET or POST
+$uid = $_GET['uid'] ?? $_POST['uid'] ?? null;
 
-//            echo "<pre>";
-
-//            print_r($new_invoice_no);
-
-//            exit;
-
-//        }
 $PAGS = new Pages();
 
 if ($RW->is_post_back()) {
-    $name = $_POST["name"] ?? ""; // Null-safe fetch
-    $_POST["url"] = $ADMIN->baseurl($name);
+    $name = $_POST['name'] ?? ''; // Null-safe fetch
+    $_POST['url'] = $ADMIN->baseurl($name);
 
     if ($uid) {
-        $_POST["updateid"] = $uid;
+        $_POST['updateid'] = $uid;
         $flag = $PAGS->update($_POST);
     } else {
         $flag = $PAGS->add($_POST);
     }
 
-    if ($flag[0] == 1 || $flag == 1) {
-        $inid = $flag[1];
-        if ($uid) {
-            $RW->redir(
-                $ADMIN->iurl(
-                    $comp .
-                        "&mode=invoice2024_25" .
-                        ("&uid=" . $uid) .
-                        ($raid ? "&raid=" . $raid : "")
-                ),
-                true
-            );
-        } else {
-            $RW->redir(
-                $ADMIN->iurl(
-                    $comp .
-                        "&mode=invoice2024_25" .
-                        ("&uid=" . $inid) .
-                        ($raid ? "&raid=" . $raid : "")
-                ),
-                true
-            );
-        }
+    if (($flag[0] ?? $flag) == 1) { // PHP 8 null-safe check
+        $inid = $flag[1] ?? $flag;
+        $redirectUid = $uid ?? $inid;
+        $RW->redir(
+            $ADMIN->iurl($comp . "&mode=invoice2024_25&uid={$redirectUid}" . ($raid ? "&raid={$raid}" : "")),
+            true
+        );
     }
 }
 
+// Generate new invoice number if no UID
 if (!$uid) {
-    $financial_year =
-        date("n") <= 3
-            ? date("Y") - 1 . "-" . date("y")
-            : date("Y") . "-" . (date("y") + 1);
-    // Fetch the last invoice number
+    $financial_year = date('n') <= 3
+        ? (date('Y') - 1) . "-" . date('y')
+        : date('Y') . "-" . (date('y') + 1);
+
     $query = $PDO->db_query(
-        "SELECT IFNULL(MAX(inviceno), 'AGSK/24-25/0000') FROM #_" .
-            tblName .
-            " WHERE inviceno LIKE '%AGSK/24-25/%'"
+        "SELECT IFNULL(MAX(inviceno), 'AGSK/24-25/0000') FROM #_" . tblName . " WHERE inviceno LIKE '%AGSK/24-25/%'"
     );
     $row = $PDO->db_fetch_array($query);
-    $new_invoice_no = $row[0];
-    // Extract numeric part using regex
+    $new_invoice_no = $row[0] ?? 'AGSK/24-25/0000';
+
+    // Extract numeric part
     preg_match('/(\d+)$/', $new_invoice_no, $matches);
-    $number = isset($matches[1]) ? (int) $matches[1] : 0; // Get the number, default to 0
+    $number = isset($matches[1]) ? (int) $matches[1] : 0;
+    $number++;
 
-    $number++; // Increment the number
-
-    // Rebuild the invoice number with padding
-    $new_invoice_no = preg_replace(
-        '/\d+$/',
-        sprintf("%04d", $number),
-        $new_invoice_no
-    );
+    // Rebuild invoice number
+    $new_invoice_no = preg_replace('/\d+$/', sprintf("%04d", $number), $new_invoice_no);
 } else {
-    $query = $PDO->db_query(
-        "SELECT inviceno FROM #_" . tblName . " WHERE `pid` = '$uid'"
-    );
+    $query = $PDO->db_query("SELECT inviceno FROM #_" . tblName . " WHERE `pid` = '{$uid}'");
     $row = $PDO->db_fetch_array($query);
-    $new_invoice_no = $row[0];
+    $new_invoice_no = $row[0] ?? '';
 }
 
+// Fetch existing invoice or client data
 if ($uid) {
-
-    $query = $PDO->db_query(
-        "select * from #_" . tblName . " where pid ='" . $uid . "' "
-    );
+    $query = $PDO->db_query("SELECT * FROM #_" . tblName . " WHERE pid = '{$uid}'");
     $row = $PDO->db_fetch_array($query);
-    @extract($row);
-    ?>
-    <input type="hidden" value="<?= $modified_by ?>" name="modified_by" />
+    if ($row) {
+        extract($row);
+    }
+?>
+    <input type="hidden" name="modified_by" value="<?= $modified_by ?? '' ?>" />
 <?php
 } elseif (isset($lid)) {
-    $query = $PDO->db_query("select * from #_leads where pid ='" . $lid . "'");
+    $query = $PDO->db_query("SELECT * FROM #_leads WHERE pid = '{$lid}'");
     $leadsRow = $PDO->db_fetch_array($query);
-    $customername = $leadsRow["name"];
-    $customeremail = $leadsRow["email"];
-    $customerno = $leadsRow["phone"];
-    $addressofclient = $leadsRow["address"];
+    $customername = $leadsRow['name'] ?? '';
+    $customeremail = $leadsRow['email'] ?? '';
+    $customerno = $leadsRow['phone'] ?? '';
+    $addressofclient = $leadsRow['address'] ?? '';
 } elseif (isset($raid)) {
-    $query = $PDO->db_query(
-        "select * from #_associates where pid ='" . $raid . "'"
-    );
+    $query = $PDO->db_query("SELECT * FROM #_associates WHERE pid = '{$raid}'");
     $leadsRow = $PDO->db_fetch_array($query);
-    $customername = $leadsRow["name"];
-    $customeremail = $leadsRow["email"];
-    $customerno = $leadsRow["phone"];
-    $addressofclient = $leadsRow["address"];
+    $customername = $leadsRow['name'] ?? '';
+    $customeremail = $leadsRow['email'] ?? '';
+    $customerno = $leadsRow['phone'] ?? '';
+    $addressofclient = $leadsRow['address'] ?? '';
 }
-
-//print_r($row);
 ?>
 <div class="container">
     <div class="div-tbl">
@@ -151,11 +113,9 @@ if ($uid) {
                             </div>
                         </div>
                     </div>
-                    <div class="header" style="width: 25%; float:right;  margin-top: 10px; margin-bottom:6px; text-align:right;"> <img style="border: 1px solid #ccc; box-shadow: 0 0 3 #ccc;" width="230" src="<?= $_SERVER[
-                        "REQUEST_SCHEME"
-                    ] .
-                        "://" .
-                        $_SERVER["HTTP_HOST"] ?>/images/logo.png" /> </div>
+                    <div class="header" style="width: 25%; float:right;  margin-top: 10px; margin-bottom:6px; text-align:right;"> <img style="border: 1px solid #ccc; box-shadow: 0 0 3 #ccc;" width="230" src="<?= $_SERVER["REQUEST_SCHEME"] .
+                                                                                                                                                                                                                    "://" .
+                                                                                                                                                                                                                    $_SERVER["HTTP_HOST"] ?>/images/logo.png" /> </div>
                     <div class="invicecon">
                         <table border="1" cellspacing="0" cellpadding="0" width="100%" class="firsttable" style="border-color:#2196F3;">
                             <tr>
@@ -166,8 +126,8 @@ if ($uid) {
                                         <strong>GSTN:</strong> 07AAPFG2830B3ZN<br />
                                         <strong>Invoice No.:</strong>
                                         <?php
-//$inviceno?$inviceno:"BI/".date('Y')."-".date('y', strtotime('+1 year'))."/23"
-?>
+                                        //$inviceno?$inviceno:"BI/".date('Y')."-".date('y', strtotime('+1 year'))."/23"
+                                        ?>
                                         <?= $new_invoice_no ?>
                                         <br />
                                         <strong>Dated:</strong>
@@ -196,7 +156,7 @@ if ($uid) {
                                     <div class="form-group mb-0">
                                         <span class="inputf"> </span>
                                         <input class="validate[required] txt large" type="text" name="customername" value="<?= $customername ??
-                                            "" ?>" placeholder="CORMACK PHARMA (OPC) PVT.LTD" />
+                                                                                                                                "" ?>" placeholder="CORMACK PHARMA (OPC) PVT.LTD" />
                                     </div>
                                     <strong>Email.ID: </strong>
                                     <div class="form-group mb-0">
@@ -204,23 +164,23 @@ if ($uid) {
                                     </div>
                                     <div class="form-group mb-0">
                                         <input class="validate[required,custom[email]] txt large" type="text" name="customeremail" value="<?= $customeremail ??
-                                            "" ?>" placeholder="test@gmail.com" />
+                                                                                                                                                "" ?>" placeholder="test@gmail.com" />
                                     </div>
                                     <strong>Contact No.: </strong>
                                     <div class="form-group mb-0">
                                         <span class="inputf"></span>
                                         <input class="validate[required,custom[onlyNumber],minSize[10],maxSize[14]] txt large" type="text" name="customerno" value="<?= $customerno ??
-                                            "" ?>" placeholder="9012012505" />
+                                                                                                                                                                        "" ?>" placeholder="9012012505" />
                                     </div>
                                     <div class="form-group mb-0">
                                         <strong>Address: </strong><span class="inputf"></span>
                                         <textarea name="addressofclient" placeholder="Address of customer" class="txt large" cols="2" rows="3"><?= $addressofclient ??
-                                            "" ?></textarea>
+                                                                                                                                                    "" ?></textarea>
                                     </div>
                                     <div class="form-group mb-0">
                                         <strong>GSTIN Number: </strong><span class="inputf"> </span>
                                         <input class="txt large" type="text" name="strn" value="<?= $strn ??
-                                            "" ?>" />
+                                                                                                    "" ?>" />
                                     </div>
                                     <strong>Place to Supply</strong>
                                     <span class="inputf"></span>
@@ -229,7 +189,7 @@ if ($uid) {
                                             <option value="">Select...</option>
                                             <option value="Andaman and Nicobar Islands - 35"
                                                 <?= isset($placetosupply) &&
-                                                $placetosupply ==
+                                                    $placetosupply ==
                                                     "Andaman and Nicobar Islands - 35"
                                                     ? 'selected="selected"'
                                                     : "" ?>>
@@ -237,258 +197,258 @@ if ($uid) {
                                             </option>
 
                                             <option value="Andhra Pradesh - 37" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply ==
-                                                "Andhra Pradesh - 37"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Andhra Pradesh - 37</option>
+                                                                                    $placetosupply
+                                                                                ) &&
+                                                                                    $placetosupply ==
+                                                                                    "Andhra Pradesh - 37"
+                                                                                    ? 'selected="selected"'
+                                                                                    : "" ?>>Andhra Pradesh - 37</option>
 
                                             <option value="Arunachal Pradesh - 12" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply ==
-                                                "Arunachal Pradesh - 12"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Arunachal Pradesh - 12</option>
+                                                                                        $placetosupply
+                                                                                    ) &&
+                                                                                        $placetosupply ==
+                                                                                        "Arunachal Pradesh - 12"
+                                                                                        ? 'selected="selected"'
+                                                                                        : "" ?>>Arunachal Pradesh - 12</option>
 
                                             <option value="Assam - 18" <?= isset(
-                                                $placetosupply
-                                            ) && $placetosupply == "Assam - 18"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Assam - 18</option>
+                                                                            $placetosupply
+                                                                        ) && $placetosupply == "Assam - 18"
+                                                                            ? 'selected="selected"'
+                                                                            : "" ?>>Assam - 18</option>
 
                                             <option value="Bihar - 10" <?= isset(
-                                                $placetosupply
-                                            ) && $placetosupply == "Bihar - 10"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Bihar - 10</option>
+                                                                            $placetosupply
+                                                                        ) && $placetosupply == "Bihar - 10"
+                                                                            ? 'selected="selected"'
+                                                                            : "" ?>>Bihar - 10</option>
 
                                             <option value="Chandigarh - 04" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply == "Chandigarh - 04"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Chandigarh - 04</option>
+                                                                                $placetosupply
+                                                                            ) &&
+                                                                                $placetosupply == "Chandigarh - 04"
+                                                                                ? 'selected="selected"'
+                                                                                : "" ?>>Chandigarh - 04</option>
 
                                             <option value="Chattisgarh - 22" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply == "Chattisgarh - 22"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Chattisgarh - 22</option>
+                                                                                    $placetosupply
+                                                                                ) &&
+                                                                                    $placetosupply == "Chattisgarh - 22"
+                                                                                    ? 'selected="selected"'
+                                                                                    : "" ?>>Chattisgarh - 22</option>
 
                                             <option value="Dadra and Nagar Haveli - 26" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply ==
-                                                "Dadra and Nagar Haveli - 26"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Dadra and Nagar Haveli - 26</option>
+                                                                                            $placetosupply
+                                                                                        ) &&
+                                                                                            $placetosupply ==
+                                                                                            "Dadra and Nagar Haveli - 26"
+                                                                                            ? 'selected="selected"'
+                                                                                            : "" ?>>Dadra and Nagar Haveli - 26</option>
 
                                             <option value="Daman and Diu - 25" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply ==
-                                                "Daman and Diu - 25"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Daman and Diu - 25</option>
+                                                                                    $placetosupply
+                                                                                ) &&
+                                                                                    $placetosupply ==
+                                                                                    "Daman and Diu - 25"
+                                                                                    ? 'selected="selected"'
+                                                                                    : "" ?>>Daman and Diu - 25</option>
 
                                             <option value="Delhi - 07" <?= isset(
-                                                $placetosupply
-                                            ) && $placetosupply == "Delhi - 07"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Delhi - 07</option>
+                                                                            $placetosupply
+                                                                        ) && $placetosupply == "Delhi - 07"
+                                                                            ? 'selected="selected"'
+                                                                            : "" ?>>Delhi - 07</option>
 
                                             <option value="Goa - 30" <?= isset(
-                                                $placetosupply
-                                            ) && $placetosupply == "Goa - 30"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Goa - 30</option>
+                                                                            $placetosupply
+                                                                        ) && $placetosupply == "Goa - 30"
+                                                                            ? 'selected="selected"'
+                                                                            : "" ?>>Goa - 30</option>
 
                                             <option value="Gujarat - 24" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply == "Gujarat - 24"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Gujarat - 24</option>
+                                                                                $placetosupply
+                                                                            ) &&
+                                                                                $placetosupply == "Gujarat - 24"
+                                                                                ? 'selected="selected"'
+                                                                                : "" ?>>Gujarat - 24</option>
 
                                             <option value="Haryana - 06" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply == "Haryana - 06"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Haryana - 06</option>
+                                                                                $placetosupply
+                                                                            ) &&
+                                                                                $placetosupply == "Haryana - 06"
+                                                                                ? 'selected="selected"'
+                                                                                : "" ?>>Haryana - 06</option>
 
                                             <option value="Himachal Pradesh - 02" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply ==
-                                                "Himachal Pradesh - 02"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Himachal Pradesh - 02</option>
+                                                                                        $placetosupply
+                                                                                    ) &&
+                                                                                        $placetosupply ==
+                                                                                        "Himachal Pradesh - 02"
+                                                                                        ? 'selected="selected"'
+                                                                                        : "" ?>>Himachal Pradesh - 02</option>
 
                                             <option value="Jammu and Kashmir - 01" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply ==
-                                                "Jammu and Kashmir - 01"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Jammu and Kashmir - 01</option>
+                                                                                        $placetosupply
+                                                                                    ) &&
+                                                                                        $placetosupply ==
+                                                                                        "Jammu and Kashmir - 01"
+                                                                                        ? 'selected="selected"'
+                                                                                        : "" ?>>Jammu and Kashmir - 01</option>
 
                                             <option value="Jharkhand - 20" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply == "Jharkhand - 20"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Jharkhand - 20</option>
+                                                                                $placetosupply
+                                                                            ) &&
+                                                                                $placetosupply == "Jharkhand - 20"
+                                                                                ? 'selected="selected"'
+                                                                                : "" ?>>Jharkhand - 20</option>
 
                                             <option value="Karnataka - 29" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply == "Karnataka - 29"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Karnataka - 29</option>
+                                                                                $placetosupply
+                                                                            ) &&
+                                                                                $placetosupply == "Karnataka - 29"
+                                                                                ? 'selected="selected"'
+                                                                                : "" ?>>Karnataka - 29</option>
 
                                             <option value="Kerala - 32" <?= isset(
-                                                $placetosupply
-                                            ) && $placetosupply == "Kerala - 32"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Kerala - 32</option>
+                                                                            $placetosupply
+                                                                        ) && $placetosupply == "Kerala - 32"
+                                                                            ? 'selected="selected"'
+                                                                            : "" ?>>Kerala - 32</option>
 
                                             <option value="Lakshadweep Islands - 31" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply ==
-                                                "Lakshadweep Islands - 31"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Lakshadweep Islands - 31</option>
+                                                                                            $placetosupply
+                                                                                        ) &&
+                                                                                            $placetosupply ==
+                                                                                            "Lakshadweep Islands - 31"
+                                                                                            ? 'selected="selected"'
+                                                                                            : "" ?>>Lakshadweep Islands - 31</option>
 
                                             <option value="Madhya Pradesh - 23" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply ==
-                                                "Madhya Pradesh - 23"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Madhya Pradesh - 23</option>
+                                                                                    $placetosupply
+                                                                                ) &&
+                                                                                    $placetosupply ==
+                                                                                    "Madhya Pradesh - 23"
+                                                                                    ? 'selected="selected"'
+                                                                                    : "" ?>>Madhya Pradesh - 23</option>
 
                                             <option value="Maharashtra - 27" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply == "Maharashtra - 27"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Maharashtra - 27</option>
+                                                                                    $placetosupply
+                                                                                ) &&
+                                                                                    $placetosupply == "Maharashtra - 27"
+                                                                                    ? 'selected="selected"'
+                                                                                    : "" ?>>Maharashtra - 27</option>
 
                                             <option value="Manipur - 14" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply == "Manipur - 14"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Manipur - 14</option>
+                                                                                $placetosupply
+                                                                            ) &&
+                                                                                $placetosupply == "Manipur - 14"
+                                                                                ? 'selected="selected"'
+                                                                                : "" ?>>Manipur - 14</option>
 
                                             <option value="Meghalaya - 17" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply == "Meghalaya - 17"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Meghalaya - 17</option>
+                                                                                $placetosupply
+                                                                            ) &&
+                                                                                $placetosupply == "Meghalaya - 17"
+                                                                                ? 'selected="selected"'
+                                                                                : "" ?>>Meghalaya - 17</option>
 
                                             <option value="Mizoram - 15" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply == "Mizoram - 15"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Mizoram - 15</option>
+                                                                                $placetosupply
+                                                                            ) &&
+                                                                                $placetosupply == "Mizoram - 15"
+                                                                                ? 'selected="selected"'
+                                                                                : "" ?>>Mizoram - 15</option>
 
                                             <option value="Nagaland - 13" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply == "Nagaland - 13"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Nagaland - 13</option>
+                                                                                $placetosupply
+                                                                            ) &&
+                                                                                $placetosupply == "Nagaland - 13"
+                                                                                ? 'selected="selected"'
+                                                                                : "" ?>>Nagaland - 13</option>
 
                                             <option value="Odisha - 21" <?= isset(
-                                                $placetosupply
-                                            ) && $placetosupply == "Odisha - 21"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Odisha - 21</option>
+                                                                            $placetosupply
+                                                                        ) && $placetosupply == "Odisha - 21"
+                                                                            ? 'selected="selected"'
+                                                                            : "" ?>>Odisha - 21</option>
 
                                             <option value="Pondicherry - 34" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply == "Pondicherry - 34"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Pondicherry - 34</option>
+                                                                                    $placetosupply
+                                                                                ) &&
+                                                                                    $placetosupply == "Pondicherry - 34"
+                                                                                    ? 'selected="selected"'
+                                                                                    : "" ?>>Pondicherry - 34</option>
 
                                             <option value="Punjab - 03" <?= isset(
-                                                $placetosupply
-                                            ) && $placetosupply == "Punjab - 03"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Punjab - 03</option>
+                                                                            $placetosupply
+                                                                        ) && $placetosupply == "Punjab - 03"
+                                                                            ? 'selected="selected"'
+                                                                            : "" ?>>Punjab - 03</option>
 
                                             <option value="Rajasthan - 08" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply == "Rajasthan - 08"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Rajasthan - 08</option>
+                                                                                $placetosupply
+                                                                            ) &&
+                                                                                $placetosupply == "Rajasthan - 08"
+                                                                                ? 'selected="selected"'
+                                                                                : "" ?>>Rajasthan - 08</option>
 
                                             <option value="Sikkim - 11" <?= isset(
-                                                $placetosupply
-                                            ) && $placetosupply == "Sikkim - 11"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Sikkim - 11</option>
+                                                                            $placetosupply
+                                                                        ) && $placetosupply == "Sikkim - 11"
+                                                                            ? 'selected="selected"'
+                                                                            : "" ?>>Sikkim - 11</option>
 
                                             <option value="Tamil Nadu - 33" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply == "Tamil Nadu - 33"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Tamil Nadu - 33</option>
+                                                                                $placetosupply
+                                                                            ) &&
+                                                                                $placetosupply == "Tamil Nadu - 33"
+                                                                                ? 'selected="selected"'
+                                                                                : "" ?>>Tamil Nadu - 33</option>
 
                                             <option value="Telangana - 36" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply == "Telangana - 36"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Telangana - 36</option>
+                                                                                $placetosupply
+                                                                            ) &&
+                                                                                $placetosupply == "Telangana - 36"
+                                                                                ? 'selected="selected"'
+                                                                                : "" ?>>Telangana - 36</option>
 
                                             <option value="Tripura - 16" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply == "Tripura - 16"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Tripura - 16</option>
+                                                                                $placetosupply
+                                                                            ) &&
+                                                                                $placetosupply == "Tripura - 16"
+                                                                                ? 'selected="selected"'
+                                                                                : "" ?>>Tripura - 16</option>
 
                                             <option value="Uttar Pradesh - 09" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply ==
-                                                "Uttar Pradesh - 09"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Uttar Pradesh - 09</option>
+                                                                                    $placetosupply
+                                                                                ) &&
+                                                                                    $placetosupply ==
+                                                                                    "Uttar Pradesh - 09"
+                                                                                    ? 'selected="selected"'
+                                                                                    : "" ?>>Uttar Pradesh - 09</option>
 
                                             <option value="Uttarakhand - 05" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply == "Uttarakhand - 05"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Uttarakhand - 05</option>
+                                                                                    $placetosupply
+                                                                                ) &&
+                                                                                    $placetosupply == "Uttarakhand - 05"
+                                                                                    ? 'selected="selected"'
+                                                                                    : "" ?>>Uttarakhand - 05</option>
 
                                             <option value="West Bengal - 19" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply == "West Bengal - 19"
-                                                ? 'selected="selected"'
-                                                : "" ?>>West Bengal - 19</option>
+                                                                                    $placetosupply
+                                                                                ) &&
+                                                                                    $placetosupply == "West Bengal - 19"
+                                                                                    ? 'selected="selected"'
+                                                                                    : "" ?>>West Bengal - 19</option>
 
                                             <option value="Other territory - 97" <?= isset(
-                                                $placetosupply
-                                            ) &&
-                                            $placetosupply ==
-                                                "Other territory - 97"
-                                                ? 'selected="selected"'
-                                                : "" ?>>Other territory - 97</option>
+                                                                                        $placetosupply
+                                                                                    ) &&
+                                                                                        $placetosupply ==
+                                                                                        "Other territory - 97"
+                                                                                        ? 'selected="selected"'
+                                                                                        : "" ?>>Other territory - 97</option>
 
                                         </select>
 
@@ -514,367 +474,190 @@ if ($uid) {
 
                     </div>
 
-                    <div class="invicecon">
-
-                        <table border="1" cellspacing="0" cellpadding="0" width="100%" class="stable" style="border-color:#2196F3;">
-                            <tr>
-                                <td width="85%" valign="top">
-                                    <p><strong>DESCRIPTION OF THE SERVICES</strong><span style="float:right;" class="btn btn-secondary btn-sm" id="addnew">
-
-                                            Add new</span></p>
-                                </td>
-
-                                <td width="14%" align="right" valign="top">
-                                    <p align="right"><strong>AMOUNT</strong></p>
-                                </td>
-
-                            </tr>
-
-                            <tr>
-
-                                <td width="85%" height="150" valign="top" class="additem"><?php if (
-                                    $uid
-                                ) {
-                                    $itemv = explode(":", $itemservice);
-                                    $sac_code = explode(":", $sac);
-                                    $ii = 0;
-                                    foreach ($itemv as $key) { ?>
+                <div class="invicecon">
+
+    <table border="1" cellspacing="0" cellpadding="0" width="100%" class="stable" style="border-color:#2196F3;">
+        <tr>
+            <td width="85%" valign="top">
+                <p><strong>DESCRIPTION OF THE SERVICES</strong>
+                    <span style="float:right;" class="btn btn-secondary btn-sm" id="addnew">Add new</span>
+                </p>
+            </td>
+            <td width="14%" align="right" valign="top">
+                <p align="right"><strong>AMOUNT</strong></p>
+            </td>
+        </tr>
+
+        <tr>
+            <td width="85%" height="150" valign="top" class="additem">
+                <?php if (!empty($uid)) {
+                    $itemv = explode(":", $itemservice ?? '');
+                    $sac_code = explode(":", $sac ?? '');
+                    $ii = 0;
+                    foreach ($itemv as $key) { ?>
+                        <p class="aditem newdata">
+                            <input onkeyup="servicelist(this)" style="width:65%" type="text"
+                                   value="<?= htmlspecialchars($key ?? '', ENT_QUOTES) ?>"
+                                   name="itemservice[]" class="validate[required]" placeholder="Service Name" />
+                            <input type="text" name="sac[]" value="<?= htmlspecialchars($sac_code[$ii] ?? '', ENT_QUOTES) ?>"
+                                   style="width:20%" placeholder="SAC Code" />
+                            <a class="uibutton slm" style="color:red; float:right">X</a>
+                            <span class="appendeddata"></span>
+                        </p>
+                    <?php $ii++; }
+                } else { ?>
+                    <p class="newdata">
+                        <?php
+                        $lead_id = $_GET["lead_id"] ?? "";
+                        $leadsRow = [];
+
+                        if (!empty($lead_id)) {
+                            $query = $PDO->db_query("SELECT service FROM #_leads WHERE id = '$lead_id'");
+                            $leadsRow = $PDO->db_fetch_array($query) ?: [];
+                        }
+
+                        $service_id = $leadsRow["service"] ?? "";
+                        $service_name = !empty($service_id)
+                            ? ($PDO->getSingleresult("SELECT name FROM #_product_manager WHERE pid='$service_id'") ?? "")
+                            : "";
+
+                        $sac_code = !empty($service_id)
+                            ? ($PDO->getSingleresult("SELECT sacCode FROM #_product_manager WHERE pid='$service_id'") ?? "")
+                            : "";
+                        ?>
+                        <input type="text" name="itemservice[]" value="<?= htmlspecialchars($service_name, ENT_QUOTES) ?>"
+                               style="width:65%" onkeyup="servicelist(this)" class="validate[required]" placeholder="Service Name" />
+                        <input type="text" name="sac[]" style="width:20%"
+                               value="<?= htmlspecialchars($sac_code, ENT_QUOTES) ?>" placeholder="SAC Code" />
+                        <span class="appendeddata"></span>
+                    </p>
+                <?php } ?>
+            </td>
+
+            <td width="14%" height="150" align="right" valign="top" class="additemprice">
+                <?php if (!empty($uid)) {
+                    $pricev = explode(":", $itempriceservice ?? '');
+                    foreach ($pricev as $valuev) { ?>
+                        <p class="aditem">
+                            <input type="number" step="0.01" autocomplete="off"
+                                   value="<?= htmlspecialchars($valuev ?? '', ENT_QUOTES) ?>"
+                                   name="itempriceservice[]" class="validate[required,custom[number]] aadpr"
+                                   placeholder="4676" />
+                        </p>
+                    <?php }
+                } else { ?>
+                    <p>
+                        <input autocomplete="off" type="number" step="0.01" name="itempriceservice[]"
+                               class="validate[required,custom[number]] aadpr" placeholder="4676" />
+                    </p>
+                <?php } ?>
+            </td>
+        </tr>
+
+        <?php if (!empty($uid)) { ?>
+            <tr class="igst" style="display:<?= ($placetosupply ?? '') != 'Delhi - 07' ? 'table-row' : 'none' ?>">
+                <td width="85%" valign="top"><p align="left">IGST @ 18%</p></td>
+                <td width="14%" align="right" valign="top"><p><span id="srtax"><?= $hsrtax ?? '0.00' ?></span> /-</p></td>
+            </tr>
+
+            <tr class="sgst" style="display:<?= ($placetosupply ?? '') == 'Delhi - 07' ? 'table-row' : 'none' ?>">
+                <td width="85%" valign="top"><p align="left">S GST @ 9%</p></td>
+                <td width="14%" align="right" valign="top"><p><span id="sbtax"><?= $hsbtax ?? '0.00' ?></span> /-</p></td>
+            </tr>
+
+            <tr class="sgst" style="display:<?= ($placetosupply ?? '') == 'Delhi - 07' ? 'table-row' : 'none' ?>">
+                <td width="85%" valign="top"><p align="left">C GST @ 9%</p></td>
+                <td width="14%" align="right" valign="top"><p><span id="kktax"><?= $hkktax ?? '0.00' ?></span> /-</p></td>
+            </tr>
+        <?php } else { ?>
+            <tr class="igst">
+                <td width="85%" valign="top"><p align="left">IGST @ 18%</p></td>
+                <td width="14%" align="right" valign="top"><p><span id="srtax"><?= $hsrtax ?? '0.00' ?></span> /-</p></td>
+            </tr>
+            <tr class="sgst" style="display:none;">
+                <td width="85%" valign="top"><p align="left">S GST @ 9%</p></td>
+                <td width="14%" align="right" valign="top"><p><span id="sbtax"><?= $hsbtax ?? '0.00' ?></span> /-</p></td>
+            </tr>
+            <tr class="sgst" style="display:none;">
+                <td width="85%" valign="top"><p align="left">C GST @ 9%</p></td>
+                <td width="14%" align="right" valign="top"><p><span id="kktax"><?= $hkktax ?? '0.00' ?></span> /-</p></td>
+            </tr>
+        <?php } ?>
+
+        <tr class="reverse-charge" style="display:none;">
+            <td width="85%" valign="top"><p align="left">Supply of Services liable to Reverse Charge</p></td>
+            <td>Yes</td>
+        </tr>
+
+        <tr>
+            <td width="85%" valign="top">
+                <p><strong>TOTAL</strong> :
+                    <span style="float:right;" class="btn btn-secondary btn-sm" id="adonaddnew">Add new</span>
+                </p>
+            </td>
+            <td width="14%" align="right" valign="top">
+                <p><strong><span id="maintotal"><?= $hmaintotal ?? '0.00' ?></span> /-</strong></p>
+            </td>
+        </tr>
+
+        <tr>
+            <td width="85%" height="150" valign="top" class="adisadditem">
+                <?php if (!empty($uid) && !empty($itemadon)) {
+                    $itemadoninv = explode(":", $itemadon ?? '');
+                    foreach ($itemadoninv as $keyi) { ?>
+                        <p class="aditem">
+                            <input value="<?= htmlspecialchars($keyi ?? '', ENT_QUOTES) ?>" type="text"
+                                   name="itemadon[]" class="validate[required]" placeholder="Service Name" />
+                            <a class="uibutton slm closebtn" style="float:right">
+                                <i class="fa fa-window-close-o"></i>
+                            </a>
+                        </p>
+                    <?php }
+                } ?>
+            </td>
+
+            <td width="14%" height="150" align="right" valign="top" class="adisadditemprice">
+                <?php if (!empty($uid) && !empty($itempriceadon)) {
+                    $priceinv = explode(":", $itempriceadon ?? '');
+                    foreach ($priceinv as $vali) { ?>
+                        <p class="aditem">
+                            <input type="number" step="0.01" autocomplete="off"
+                                   value="<?= htmlspecialchars($vali ?? '', ENT_QUOTES) ?>"
+                                   name="itempriceadon[]" class="validate[required,custom[number]]" placeholder="4676" />
+                        </p>
+                    <?php }
+                } ?>
+            </td>
+        </tr>
+
+        <tr>
+            <td width="85%" valign="top">
+                <p><strong>GROSS TOTAL</strong> : <br />
+                    (<strong>In Words:</strong>
+                    <span id="inwords"><?= htmlspecialchars($hinwords ?? '', ENT_QUOTES) ?></span>)
+                </p>
+            </td>
+            <td width="14%" align="right" valign="top">
+                <p align="center">
+                    <strong><span id="grasstotal"><?= htmlspecialchars($hgrasstotal ?? '0.00', ENT_QUOTES) ?></span> /-</strong>
+                </p>
+            </td>
+        </tr>
+    </table>
+
+</div>
+
+
+                    <input type="hidden" id="hsrtax" name="hsrtax" value="<?= $hsrtax ?? 0 ?>" />
+                    <input type="hidden" id="hsbtax" name="hsbtax" value="<?= $hsbtax ?? 0 ?>" />
+                    <input type="hidden" id="hkktax" name="hkktax" value="<?= $hkktax ?? 0 ?>" />
+                    <input type="hidden" id="hgrasstotal" name="hgrasstotal" value="<?= $hgrasstotal ?? 0 ?>" />
+                    <input type="hidden" id="hmaintotal" name="hmaintotal" value="<?= $hmaintotal ?? 0 ?>" />
+                    <input type="hidden" id="hinwords" name="hinwords" value="<?= $hinwords ?? '' ?>" />
 
-                                            <p class="aditem newdata">
-                                                <input onkeyup="servicelist(this)" style="width:65%" type="text" value="<?= $key ??
-                                                    "" ?>" name="itemservice[]" class="validate[required]" placeholder="Service Name">
-                                                <input type="text" name="sac[]" value="<?= $sac_code[
-                                                    $ii
-                                                ] ?>" style="width:20%" placeholder="Sac Code" />
-                                                <a class="uibutton slm" style="color:red; float:right">X</a><span class="appendeddata"></span>
-                                            </p>
-
-                                        <?php $ii++;}
-                                } else {
-                                     ?>
-
-                                        <p class="newdata">
-
-                                        <?php
-                                        $lead_id = $_GET["lead_id"] ?? ""; // Get lead ID from request
-                                        $leadsRow = [];
-
-                                        if (!empty($lead_id)) {
-                                            $query = $PDO->db_query(
-                                                "SELECT service FROM #_leads WHERE id = '$lead_id'"
-                                            );
-                                            $leadsRow =
-                                                $PDO->db_fetch_array($query) ?:
-                                                []; // Ensure it's an array
-                                        }
-                                        ?>
-
-
-<?php
-$service_id = $leadsRow["service"] ?? ""; // Prevent undefined index warning
-$service_name = !empty($service_id)
-    ? $PDO->getSingleresult(
-        "SELECT name FROM #_product_manager WHERE pid='$service_id'"
-    )
-    : "";
-?>
-<input type="text" name="itemservice[]" value="<?= htmlspecialchars(
-    $service_name,
-    ENT_QUOTES
-) ?>" style="width:65%" onkeyup="servicelist(this)" class="validate[required]" placeholder="Service Name" />
-
-
-<?php
-$service_id = $leadsRow["service"] ?? ""; // Check if 'service' exists, else assign an empty string
-$sac_code = "";
-
-if (!empty($service_id)) {
-    $sac_code =
-        $PDO->getSingleresult(
-            "SELECT sacCode FROM #_product_manager WHERE pid='$service_id'"
-        ) ?? "";
-}
-?>
-<input type="text" name="sac[]" style="width:20%" value="<?= htmlspecialchars(
-    $sac_code,
-    ENT_QUOTES
-) ?>" placeholder="SAC Code" />
-
-
-                                            <span class="appendeddata"></span>
-                                        </p>
-
-                                    <?php
-                                } ?>
-                                </td>
-
-                                <td width="14%" height="150" align="right" valign="top" class="additemprice"><?php if (
-                                    $uid
-                                ) {
-                                    $pricev = explode(":", $itempriceservice);
-
-                                    foreach ($pricev as $valuev) { ?>
-
-                                            <p class="aditem">
-
-                                                <input type="number" step="0.01" autocomplete="off" value="<?= $valuev ?>" name="itempriceservice[]" class="validate[required,custom[number]] aadpr" placeholder="4676">
-
-                                            </p>
-
-                                        <?php }
-                                } else {
-                                     ?>
-
-                                        <p>
-
-                                            <input autocomplete="off" type="number" step="0.01" name="itempriceservice[]" class="validate[required,custom[number]] aadpr" placeholder="4676" />
-
-                                        </p>
-
-                                    <?php
-                                } ?>
-                                </td>
-
-                            </tr>
-
-                            <?php if ($uid) { ?>
-
-                                <tr class="igst" style="display:<?= $placetosupply !=
-                                "Delhi - 07"
-                                    ? "table-row"
-                                    : "none" ?>">
-
-                                    <td width="85%" valign="top">
-                                        <p align="left">IGST @ 18 %</p>
-                                    </td>
-
-                                    <td width="14%" align="right" valign="top">
-                                        <p><span id="srtax">
-
-                                                <?= $hsrtax ?>
-
-                                            </span>/-</p>
-                                    </td>
-
-                                </tr>
-
-                                <tr class="sgst" style="display:<?= $placetosupply ==
-                                "Delhi - 07"
-                                    ? "table-row"
-                                    : "none" ?>">
-
-                                    <td width="85%" valign="top">
-                                        <p align="left">S GST @ 9%</p>
-                                    </td>
-
-                                    <td width="14%" align="right" valign="top">
-                                        <p><span id="sbtax">
-
-                                                <?= $hsbtax ?>
-
-                                            </span>/-</p>
-                                    </td>
-
-                                </tr>
-
-                                <tr class="sgst" style="display:<?= $placetosupply ==
-                                "Delhi - 07"
-                                    ? "table-row"
-                                    : "none" ?>">
-
-                                    <td width="85%" valign="top">
-                                        <p align="left">C GST @ 9%</p>
-                                    </td>
-
-                                    <td width="14%" align="right" valign="top">
-                                        <p><span id="kktax">
-
-                                                <?= $hkktax ?>
-
-                                            </span>/-</p>
-                                    </td>
-
-                                </tr>
-
-                            <?php } else { ?>
-
-                                <tr class="igst">
-
-                                    <td width="85%" valign="top">
-                                        <p align="left">IGST @ 18 %</p>
-                                    </td>
-
-                                    <td width="14%" align="right" valign="top">
-                                        <p><span id="srtax">
-
-                                                <?= $hsrtax ?>
-
-                                            </span>/-</p>
-                                    </td>
-
-                                </tr>
-
-                                <tr class="sgst" style="display:none;">
-
-                                    <td width="85%" valign="top">
-                                        <p align="left">S GST @ 9%</p>
-                                    </td>
-
-                                    <td width="14%" align="right" valign="top">
-                                        <p><span id="sbtax">
-
-                                                <?= $hsbtax ?>
-
-                                            </span>/-</p>
-                                    </td>
-
-                                </tr>
-
-                                <tr class="sgst" style="display:none;">
-
-                                    <td width="85%" valign="top">
-                                        <p align="left">C GST @ 9%</p>
-                                    </td>
-
-                                    <td width="14%" align="right" valign="top">
-                                        <p><span id="kktax">
-
-                                                <?= $hkktax ?>
-
-                                            </span>/-</p>
-                                    </td>
-
-                                </tr>
-
-                            <?php } ?>
-
-                            <tr class="reverse-charge" style="display:none;">
-
-                                <td width="85%" valign="top">
-                                    <p align="left">Supply of Services liable to Reverse Charge</p>
-                                </td>
-
-                                <td>Yes</td>
-
-                            </tr>
-
-                            <tr>
-                                <td width="85%" valign="top">
-                                    <p><strong>TOTAL</strong> :<span style="float:right;" class="btn btn-secondary btn-sm" id="adonaddnew">Add new</span> </p>
-                                </td>
-                                <td width="14%" align="right" valign="top">
-                                    <p><strong><span id="maintotal">
-                                    <?= isset($hmaintotal)
-                                        ? $hmaintotal
-                                        : "0.00" ?>
-
-                                            </span>/-</strong></p>
-                                </td>
-
-                            </tr>
-
-                            <tr>
-
-                                <td width="85%" height="150" valign="top" class="adisadditem"><?php if (
-                                    $uid &&
-                                    $itemadon != ""
-                                ) {
-                                    $itemadoninv = explode(":", $itemadon);
-
-                                    foreach ($itemadoninv as $keyi) { ?>
-
-                                            <p class="aditem">
-
-                                                <input value="<?= $keyi ?>" type="text" name="itemadon[]" class="validate[required]" placeholder="Service Name">
-
-                                                <a class="uibutton slm closebtn" style=" float:right"><i class="fa fa-window-close-o"></i></a>
-                                            </p>
-
-                                        <?php }
-                                } else {
-                                     ?>
-
-
-
-                                        <!-- <p class="aditem"><input type="text" name="itemadon[]" class="validate[required]"  placeholder="Service Name" /><a class="uibutton slm" style="color:red; float:right">X</a></p> -->
-
-
-
-                                    <?php
-                                } ?>
-                                </td>
-
-                                <td width="14%" height="150" align="right" valign="top" class="adisadditemprice"><?php if (
-                                    $uid &&
-                                    $itempriceadon != ""
-                                ) {
-                                    $priceinv = explode(":", $itempriceadon);
-
-                                    foreach ($priceinv as $vali) { ?>
-
-                                            <p class="aditem">
-
-                                                <input type="number" step="0.01" autocomplete="off" value="<?= $vali ?>" name="itempriceadon[]" class="validate[required,custom[number]]" placeholder="4676">
-
-                                            </p>
-
-                                        <?php }
-                                } else {
-                                     ?>
-
-
-
-                                        <!-- <p class="aditem"><input autocomplete="off" type="number" step="0.01" name="itempriceadon[]" class="validate[required,custom[number]]"  placeholder="4676" /></p> -->
-
-
-
-                                    <?php
-                                } ?>
-                                </td>
-
-                            </tr>
-
-                            <tr>
-
-                                <td width="85%" valign="top">
-                                    <p><strong>GROSS TOTAL</strong> : <br />
-
-                                        (<strong>In Words:</strong> <span id="inwords">
-
-                                        <?= $hinwords ?? "" ?>
-
-
-                                        </span>)</p>
-                                </td>
-
-                                <td width="14%" align="right" valign="top">
-                                    <p align="center"><strong><span id="grasstotal">
-
-                                                <?= $hgrasstotal ?? "" ?>
-
-                                            </span>/-</strong></p>
-                                </td>
-
-                            </tr>
-
-                        </table>
-
-                    </div>
-
-                    <input type="hidden" id="hsrtax" name="hsrtax" value="<?= $hsrtax ?>" />
-
-                    <input type="hidden" id="hsbtax" name="hsbtax" value="<?= $hsbtax ?>" />
-
-                    <input type="hidden" id="hkktax" name="hkktax" value="<?= $hkktax ?>" />
-
-<input type="hidden" id="hgrasstotal" name="hgrasstotal" value="<?= $hgrasstotal ?? 0 ?>" />
-
-                    <input type="hidden" id="hmaintotal" name="hmaintotal" value="<?= $hmaintotal ?>" />
-
-                    <input type="hidden" id="hinwords" name="hinwords" value="<?= $hinwords ?>" />
 
                     <input type="hidden" id="filename" name="filename" value="<?= "invoice_" .
-                        time() ?>" />
+                                                                                    time() ?>" />
 
                     <div class="invicecon foot">
 
@@ -962,9 +745,8 @@ if (!empty($service_id)) {
 
                         <input type="hidden" name="user_type" value="1" />
 
-                        <input type="hidden" name="lid" value="<?= $lid ?>" />
-
-                        <input type="hidden" name="raid" value="<?= $raid ?>" />
+                        <input type="hidden" name="lid" value="<?= $lid ?? '' ?>" />
+                        <input type="hidden" name="raid" value="<?= $raid ?? '' ?>" />
 
                         <input type="submit" class="uibutton loading btn btn-primary mr-1" value="Submit">
 
@@ -1074,8 +856,6 @@ if (!empty($service_id)) {
         transition: all 0.4s ease 0s;
     }
 
-
-
     input[type=number]::-webkit-inner-spin-button,
     input[type=number]::-webkit-outer-spin-button {
         -webkit-appearance: none;
@@ -1084,20 +864,14 @@ if (!empty($service_id)) {
         margin: 0;
     }
 
-
-
     .slm {
         height: 19px;
         margin: 0;
     }
 
-
-
     p.aditem.newdata {
         position: relative;
     }
-
-
 
     p.aditem.newdata .appendeddata {
         position: absolute;
@@ -1110,13 +884,9 @@ if (!empty($service_id)) {
         overflow-y: auto;
     }
 
-
-
     span.appendeddata ul {
         border: 1px solid #ccc;
     }
-
-
 
     span.appendeddata ul li {
         border-bottom: 1px solid #ccc;
@@ -1124,8 +894,6 @@ if (!empty($service_id)) {
         padding: 0 15px;
         cursor: pointer;
     }
-
-
 
     .btn-group-pms label {
         width: auto;
@@ -1135,8 +903,6 @@ if (!empty($service_id)) {
         margin: 0;
         font-size: 16px;
     }
-
-
 
     .igst {
         display: none;
@@ -1158,548 +924,207 @@ if (!empty($service_id)) {
         max-width: 69%;
     }
 </style>
-
 <script>
     jQuery(document).ready(function() {
-
-
-
         // binds form submission and fields to the validation engine
-
-
-
         jQuery("#formID").validationEngine({
             promptPosition: 'inline'
         });
-
-
-
         /*$("#formID").bind("jqv.form.result", function(event, errorFound) {
-
-
 
          if(errorFound) alert("There is a problem with your form");
 
-
-
          })*/
-
-
-
     });
 
-
-
-
-
-
-
     /*$.validator.methods.validateDate = function( value, element ) {
-
-
-
      return this.optional( element ) || /\b\d{4}[\/-]\d{1,2}[\/-]\b\d{1,2} (0\d|1[01]):[0-5]\d:[0-5]\d$\b/.test( value );
-
-
-
      }*/
-
-
-
-    function ValidateDate(dtValue)
-
-
-
-    {
-
-
-
+    function ValidateDate(dtValue) {
         var dtRegex = new RegExp(/\b\d{4}[\/-]\d{1,2}[\/-]\b\d{1,2} (0\d|1[01]):[0-5]\d:[0-5]\d$\b/);
-
-
-
         return dtRegex.test(dtValue);
-
-
 
     }
 </script>
 
 <script>
     $(document).ready(function(e) {
-
-
-
         $('#addnew').on('click', function() {
-
-
-
             var addtm = 'onkeyup="servicelist(this)"';
-
-
-
             additems('additem', 'additemprice', 'service', addtm);
 
-
-
         })
-
-
-
         $('#adonaddnew').on('click', function() {
-
-
-
             var addtm = '';
-
-
-
             additems('adisadditem', 'adisadditemprice', 'adon', addtm);
 
-
-
         })
-
-
 
         $('.additem').on('click', '.aditem a', function() {
-
-
-
             removebox($(this), 'additemprice')
-
-
-
-
-
-
-
         })
-
-
 
         $('.adisadditem').on('click', '.aditem a', function() {
-
-
-
             removebox($(this), 'adisadditemprice')
-
-
-
-
-
-
-
         })
 
-
-
         $('.additemprice').on('keyup', 'p input', function() {
-
-
-
             calculation()
-
-
-
         });
-
-
-
         $('.adisadditemprice').on('keyup', 'p input', function() {
-
-
-
             calculation()
 
-
-
         });
-
-
-
-
-
-
 
     });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     function removebox(a, b) {
 
-
-
         var indx = a.parent().index();
-
-
-
         $('.' + b).children('.aditem').eq(indx).remove();
-
-
-
         a.parent().remove();
-
-
-
         calculation();
-
-
-
     }
 
     ;
-
-
-
     function additems(a, b, c, d) {
-
-
-
         $('.' + a).append('<p class="aditem newdata"><input type="text" style="width:65%" name="item' + c + '[]" ' + d + ' class="validate[required]" placeholder="Service Name" /> <input type="text" name="sac[]" style="width:20%"  placeholder="Sac Code" /><a class="uibutton slm" style="color:red; float:right; font-size:1.5rem;" ><i class="fa fa-window-close"></i></a><span class="appendeddata"></span></p>');
-
-
-
-
-
-
-
         $('.' + b).append('<p class="aditem"><input autocomplete="off" type="number" step="0.01" name="itemprice' + c + '[]" class="validate[required,custom[number]] aadpr"  placeholder="4676" /></p>');
 
-
-
-
-
-
-
-    }
-
-    ;
-
-
-
-    function calculation() {
-
-
-
-        var total = 0
-
-
-
-        var total2 = 0
-
-
-
-        $('.additemprice').find('p input').each(function(index, element) {
-
-
-
-            if (element.value > 0) {
-
-
-
-                total += parseFloat(element.value);
-
-
-
-            }
-
-
-
-        });
-
-
-
-        $('.adisadditemprice').find('p input').each(function(index, element) {
-
-
-
-            if (element.value > 0) {
-
-
-
-                total2 += parseFloat(element.value);
-
-
-
-            }
-
-
-
-        });
-
-
-
-        $('#srtax').text(taxes(total, 18).toFixed(2));
-
-
-
-        $('#sbtax').text(taxes(total, 9).toFixed(2));
-
-
-
-        $('#kktax').text(taxes(total, 9).toFixed(2));
-
-
-
-        var grt = $('#isGSTApplicable').val() == 'yes' ? (total + taxes(total, 18)) : total;
-
-
-
-        //console.log(grt);
-
-
-
-        $('#maintotal').text(Math.round(grt));
-
-
-
-        $('#inwords').text(inWords(Math.round(grt + total2)));
-
-        if ($('#isGSTApplicable').val() == 'yes') {
-
-            $('#hsrtax').val(taxes(total, 18).toFixed(2));
-
-
-
-            $('#hsbtax').val(taxes(total, 9).toFixed(2));
-
-
-
-            $('#hkktax').val(taxes(total, 9).toFixed(2));
-
+    };
+  function calculation() {
+    var total = 0;
+    var total2 = 0;
+
+    // Main service item prices
+    $('.additemprice').find('p input').each(function(index, element) {
+        var val = parseFloat(element.value);
+        if (!isNaN(val) && val > 0) {
+            total += val;
         }
+    });
 
-        $('#hgrasstotal').val(Math.round(grt + total2));
+    // Additional item prices
+    $('.adisadditemprice').find('p input').each(function(index, element) {
+        var val = parseFloat(element.value);
+        if (!isNaN(val) && val > 0) {
+            total2 += val;
+        }
+    });
 
+    // Calculate taxes
+    var tax18 = taxes(total, 18);
+    var tax9 = taxes(total, 9);
 
+    $('#srtax').text(tax18.toFixed(2));
+    $('#sbtax').text(tax9.toFixed(2));
+    $('#kktax').text(tax9.toFixed(2));
 
-        $('#hmaintotal').val(Math.round(grt));
+    var isGST = $('#isGSTApplicable').val() === 'yes';
+    var grt = isGST ? (total + tax18) : total;
 
+    // Round totals
+    var maintotal = Math.round(grt);
+    var grasstotal = Math.round(grt + total2);
 
+    // Update text fields
+    $('#maintotal').text(maintotal);
+    $('#grasstotal').text(grasstotal);
+    $('#inwords').text(inWords(grasstotal));
 
-        $('#hinwords ').val(inWords(Math.round(grt + total2)));
-
-
-
-        $('#grasstotal').text(Math.round(grt + total2));
-
-
-
+    // Update hidden fields
+    if (isGST) {
+        $('#hsrtax').val(tax18.toFixed(2));
+        $('#hsbtax').val(tax9.toFixed(2));
+        $('#hkktax').val(tax9.toFixed(2));
     }
 
-
+    $('#hgrasstotal').val(grasstotal);
+    $('#hmaintotal').val(maintotal);
+    $('#hinwords').val(inWords(grasstotal)); // fixed space in selector
+}
 
     function taxes(a, b) {
-
-
-
         return a * b / 100
 
-
-
     }
 
+const a = [
+  '', 'one ', 'two ', 'three ', 'four ', 'five ', 'six ', 'seven ',
+  'eight ', 'nine ', 'ten ', 'eleven ', 'twelve ', 'thirteen ',
+  'fourteen ', 'fifteen ', 'sixteen ', 'seventeen ', 'eighteen ', 'nineteen '
+];
+const b = ['', '', 'twenty ', 'thirty ', 'forty ', 'fifty ', 'sixty ', 'seventy ', 'eighty ', 'ninety '];
 
+function inWords(num) {
+    num = parseInt(num, 10);
+    if (isNaN(num) || num === 0) return 'Rupees Zero only';
 
+    if (num.toString().length > 9) return 'Overflow (max 9 digits)';
 
+    const n = ('000000000' + num)
+        .substr(-9)
+        .match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
 
+    if (!n) return '';
 
+    let str = '';
+    str += (n[1] != 0) ? (a[+n[1]] || (b[n[1][0]] + a[n[1][1]])) + 'crore ' : '';
+    str += (n[2] != 0) ? (a[+n[2]] || (b[n[2][0]] + a[n[2][1]])) + 'lakh ' : '';
+    str += (n[3] != 0) ? (a[+n[3]] || (b[n[3][0]] + a[n[3][1]])) + 'thousand ' : '';
+    str += (n[4] != 0) ? (a[+n[4]] || (b[n[4][0]] + a[n[4][1]])) + 'hundred ' : '';
+    str += (n[5] != 0)
+        ? ((str !== '') ? 'and ' : '') + (a[+n[5]] || (b[n[5][0]] + a[n[5][1]]))
+        : '';
 
-    var a = ['', 'one ', 'two ', 'three ', 'four ', 'five ', 'six ', 'seven ', 'eight ', 'nine ', 'ten ', 'eleven ', 'twelve ', 'thirteen ', 'fourteen ', 'fifteen ', 'sixteen ', 'seventeen ', 'eighteen ', 'nineteen '];
-
-
-
-    var b = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
-
-
-
-    function inWords(num) {
-
-
-
-        if ((num = num.toString()).length > 9)
-
-            return num;
-
-
-
-        n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
-
-
-
-        if (!n)
-
-            return;
-
-
-
-        var str = '';
-
-
-
-        str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'crore ' : '';
-
-
-
-        str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'lakh ' : '';
-
-
-
-        str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'thousand ' : '';
-
-
-
-        str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'hundred ' : '';
-
-
-
-        str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) + 'only ' : '';
-
-
-
-        return 'Rupees ' + str;
-
-
-
-    }
-
-
+    return 'Rupees ' + str.trim() + 'only';
+}
 
     function servicelist(el) {
-
-
-
         $.ajax({
-
-
-
-            url: '<?= SITE_PATH_ADM . _MODS . "/invoice/" ?>ajax_refresh.php',
-
-
+            url: '<?= SITE_PATH_ADM . _MODS . "/invoice2024_25/" ?>ajax_refresh.php',
 
             type: 'POST',
 
-
-
             data: {
                 'keyword': el.value,
-                'created_on': '<?= $created_on ?>'
+                'created_on': '<?= $created_on ?? "" ?>'
             },
-
-
-
             success: function(data) {
-
-
-
                 var parent = el.parentNode
-
-
-
                 var node = parent.querySelector('.appendeddata');
-
-
-
                 node.innerHTML = data;
 
-
-
             }
-
-
-
         });
-
-
-
     }
-
-
 
     function set_item(a, b, c, d) {
-
-
-
         var prnt = a.parentNode.parentNode.parentNode;
-
-
-
         var ntdt = prnt.getElementsByTagName('input')[0];
-
-
-
         var as = prnt.getElementsByTagName('input')[1];
-
-
-
         as.value = c;
-
-
-
         ntdt.value = b;
-
         //console.log(d);
-
         //$('.aadpr').val(d);
-
-
-
         var rmd = a.parentNode.parentNode;
-
-
-
         //rmd.style.display="none";
-
-
-
         rmd.removeChild(rmd.lastChild);
-
-
-
         rmd.previousSibling.value = '44';
-
-
-
         console.log(rmd);
-
-
-
         //prnt.removeChild(rmd);
 
-
-
     }
-
-
-
     jQuery(document).on("click", function(e) {
         var $clicked = jQuery(e.target);
         if (!$clicked.hasClass("appendeddata")) {
             jQuery(".appendeddata ul").remove();
 
-
-
         }
     });
+
     function showigst() {
-
         var val = $('#placetosupply').val();
-
         console.log(val);
-
         $('.reverse-charge').hide();
 
         $('.sgst').hide();
@@ -1729,56 +1154,26 @@ if (!empty($service_id)) {
         }
 
         //$('.'+show).show();
-
-
-
         //$('.'+hide).hide();
-
 
 
     }
 
-
-
-
-
-
-
     $(function() {
-
-
-
         $('#datetimepicker').datetimepicker({
-
-
-
             format: 'yyyy-mm-dd hh:ii:ss',
-
-
-
             autoclose: true,
-
-
-
             endDate: '+0d',
-
-
-
         });
-
-
-
     });
 </script>
 
 
 
 <!--Date and time picker-->
-
 <script src="https://code.jquery.com/ui/1.12.0/jquery-ui.min.js"></script>
 <script src='js/timepicker.js'></script>
 <link rel="stylesheet" href="http://code.jquery.com/ui/1.10.2/themes/smoothness/jquery-ui.css">
-
 <script>
     $('.time').timepicker({
 
@@ -1788,7 +1183,6 @@ if (!empty($service_id)) {
 
     });
 </script>
-
 <script>
     $('[data-toggle=datepicker]').each(function() {
 

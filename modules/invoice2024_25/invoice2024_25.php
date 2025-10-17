@@ -1,3 +1,6 @@
+<h2 style="text-align:center;">Please wait.........</h2>
+
+
 <?php
 //ini_set('display_errors', 1);
 //ini_set('display_startup_errors', 1);
@@ -17,8 +20,8 @@ if ($uid) {
     $keys = explode(":", $itemservice);
     $scode = explode(":", $sac);
     $valus = explode(":", $itempriceservice);
-    $adonkeys = explode(":", $itemadon);
-    $adonvalus = explode(":", $itempriceadon);
+$adonkeys = explode(":", $itemadon ?? '');
+$adonvalus = explode(":", $itempriceadon ?? '');
 
     $allkeys = "";
     $saccode = "";
