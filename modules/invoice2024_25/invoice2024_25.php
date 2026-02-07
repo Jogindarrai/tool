@@ -1,10 +1,10 @@
-<h2 style="text-align:center;">Please wait.........</h2>
+<!-- <h2 style="text-align:center;">Please wait.........</h2> -->
 
 
 <?php
-//ini_set('display_errors', 1);
-//ini_set('display_startup_errors', 1);
-//error_reporting(E_ALL);
+// ini_set('display_errors', 1);
+// ini_set('display_startup_errors', 1);
+// error_reporting(E_ALL);
 
 include FS_ADMIN . _MODS . "/invoice2024_25/invoice2024_25.inc.php";
 require_once dirname(__FILE__) . "/tcpdf/tcpdf.php";
@@ -14,8 +14,11 @@ $uid = isset($_GET['uid']) ? intval($_GET['uid']) : 0;
 if ($uid) {
     $query = $PDO->db_query("select * from #_" . tblName . " where pid ='" . $uid . "' ");
     $row = $PDO->db_fetch_array($query);
-    @extract($row);
-
+if (is_array($row)) {
+    extract($row);
+} else {
+    $row = []; // ensure variable set rahe
+}
     // Prepare invoice data
     $keys = explode(":", $itemservice);
     $scode = explode(":", $sac);
@@ -95,6 +98,11 @@ $adonvalus = explode(":", $itempriceadon ?? '');
 
     $pdf_path = __DIR__ . "/pdf/" . $filename . ".pdf";
     $pdf->Output($pdf_path, "F");
+
+// $sname = 'Record has been added/updated. PDF file generated successfully: '.$filename.'.pdf';
+// $RW->sessset($sname,'s');
+// $RW->redir($ADMIN->iurl($comp), true); // redirect to listing page
+
 
     echo '<h2 style="text-align:center;">PDF Generated Successfully</h2>';
     echo '<div style="text-align:center; margin-top:20px;">

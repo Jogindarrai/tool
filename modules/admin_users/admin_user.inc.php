@@ -1,210 +1,150 @@
 <?php
-if($_SESSION["AMD"][3]!=1){
-	//$BSC->redir(SITE_PATH_ADM);
-	}
+if ($_SESSION["AMD"][3] != 1) {
+    // $BSC->redir(SITE_PATH_ADM);
+}
 
 class AdminUsers extends dbc
-
 {
-
-	
-
-	 public function  add($data)
-
-	 {
-
-		    @extract($data);
-
-	        $query=parent::db_query("select * from pms_admin_users where email ='".$email."' "); 
-
-	        if($query->rowCount()==0)
-
-	        {
-
-				$data['password']=$this->password($data['password']);
-
-				$data['created_on']=@date('Y-m-d H:i:s');
-
-				$data['create_by']=$_SESSION["AMD"][0];
-
-				$data['shortorder']=parent::getSingleresult("select max(shortorder) as shortorder from pms_admin_users where 1=1 ")+1;
-
-				parent::sqlquerywithprefix("rs",'pms_admin_users',$data);
-
-		        parent::sessset('Record has been added', 's');
-
-	            $flag =1;
-
-		    }else {
-
-			    parent::sessset('Record has already added', 'e');
-
-				$flag =0;
-
-			}
-
-			
-
-			return $flag; 
-
-	 }
-
-	 
-
-	 public function  update($data)
-
-	 {
-
-		   @extract($data);
-
-	       $query=parent::db_query("select * from pms_admin_users where email ='".$email."' and user_id!='".$updateid."' "); 
-
-	       if($query->rowCount()==0)
-
-	       {
-			 /*  if($data['password']==''){
-				   
-		   $pass=parent::getSingleResult("select password from pms_admin_users where user_id ='".$updateid."'");
-				  $data['password']=$pass;  
-				   } else{
-
-				 $data['password']=$this->password($data['password']);
-				   }*/
-		         // parent::sqlquerywithprefix("rs",'pms_admin_users',$data);
-
-				 $data['modified_on']=@date('Y-m-d H:i:s');
-
-			     parent::sqlquerywithprefix("rs",'pms_admin_users',$data,'user_id',$updateid);
-
-		         parent::sessset('Record has been updated', 's');
-
-	             $flag =1;
-
-		    }else {
-
-			    parent::sessset('Record has already added', 'e');
-
-				$flag =0;
-
-			}
-
-			
-
-			return $flag;  
-
-		 
-
-	 }
-
-	 
-
-	 public function  delete($updateid)
-
-	 {
-
-		   if(is_array($updateid))
-
-		   {
-
-			   $updateid=implode(',',$updateid);
-
-		   }
-
-		   
-
-		    parent::db_query("delete from pms_admin_users where user_id in ($updateid)");
-
-		   
-
-		   
-
-	 }
-
-	 
-
-	 public function status($updateid,$status)
-
-	 {
-
-		   if(is_array($updateid))
-
-		   {
-
-			   $updateid=implode(',',$updateid);
-
-		   }
-
-		   
-
-		   parent::db_query("update  pms_admin_users set status='".$status."' where user_id in ($updateid)");
-
-		   
-
-	 }
-
-	 
-
-	  
-
-	 
-
-	 public function  display($start,$pagesize,$fld,$otype,$search_data)
-
-	 {
-
-		$start = intval($start); 
-
-	   	$columns = "select * "; 
-
-		
-
-		if(trim($search_data)!='')
-
-		{
-
-		   $wh=" and (name like '%".$search_data."%' or email like '%".$search_data."%' or user_type like '%".$search_data."%') ";	
-
-		}
-
-		
-
-		$sql = " from pms_admin_users where 1 ".$zone.$mtype.$extra.$extra1.$extra2.$wh;
-
-		$order_by == '' ? $order_by = (($ord)?'orders':(($fld)?$fld:'shortorder')) : true;
-
-        $order_by2 == '' ? $order_by2 = (($otype)?$otype:'DESC') : true;
-
-		$sql_count = "select count(*) ".$sql; 
-
-		$sql .= "order by $order_by $order_by2 ";
-
-		$sql .= "limit $start, $pagesize ";
-
-		$sql = $columns.$sql;
-
-		$result = parent::db_query($sql);
-
-		$reccnt = parent::db_scalar($sql_count);
-
-		return array($result,$reccnt);
-
-	 }
-
-	  
-
-	 
-
-	 public function password($password)
-
-	 {
-
-	        $password=md5($password); 
-
-		    $password=base64_encode($password); 	
-
-		    return $password;
-
-	 }
-
+    /* ================= ADD ================= */
+public function add($data)
+{
+    // Make sure email exists
+    $email = $data['email'] ?? '';
+    if (!$email) {
+        parent::sessset('Email is required', 'e');
+        return 0;
+    }
+
+    // Check for duplicate email
+    $query = parent::db_query("SELECT * FROM pms_admin_users WHERE email='" . addslashes($email) . "'");
+    if ($query->rowCount() > 0) {
+        parent::sessset('Email already exists', 'e');
+        return 0;
+    }
+
+    // Encrypt password
+    if (!empty($data['password'])) {
+        $data['password'] = $this->password($data['password']);
+    }
+
+    // Add audit fields
+    $data['created_on'] = date('Y-m-d H:i:s');
+    $data['create_by']  = $_SESSION["AMD"][0] ?? 0;
+    $data['shortorder'] = parent::getSingleresult("SELECT MAX(shortorder) FROM pms_admin_users") + 1;
+
+    // Set defaults for NOT NULL columns to avoid PDO 1364
+    $mandatoryFields = ['tf_1','tf_2','tf_3','tf_4','logintime','userdoc','accessmodule','address','image','emailsign','']; // adjust for your table
+    foreach ($mandatoryFields as $field) {
+        if (!isset($data[$field])) {
+            $data[$field] = ($field === 'logintime') ? date('Y-m-d H:i:s') : '';
+        }
+    }
+
+    // Insert into database
+    parent::sqlquerywithprefix('pms_admin_users', $data);
+
+    // Success message
+    parent::sessset('User has been added successfully', 's');
+    return 1;
 }
-?>
+
+
+
+    /* ================= UPDATE ================= */
+    public function update($data)
+    {
+        extract($data);
+
+        // Check if email exists for other users
+        $query = parent::db_query(
+            "SELECT * FROM pms_admin_users
+             WHERE email='" . addslashes($email) . "'
+             AND user_id!='" . (int)$updateid . "'"
+        );
+
+        if ($query->rowCount() == 0) {
+
+            $data['modified_on'] = date('Y-m-d H:i:s');
+
+            // UPDATE database
+            parent::sqlquerywithprefix(
+                'pms_admin_users',
+                $data,
+                'exe',
+                'user_id',
+                $updateid
+            );
+
+            parent::sessset('Record has been updated', 's');
+            return 1;
+        }
+
+        parent::sessset('Record has already been added', 'e');
+        return 0;
+    }
+
+    /* ================= DELETE ================= */
+    public function delete($updateid)
+    {
+        if (is_array($updateid)) {
+            $updateid = implode(',', array_map('intval', $updateid));
+        } else {
+            $updateid = (int)$updateid;
+        }
+
+        parent::db_query("DELETE FROM pms_admin_users WHERE user_id IN ($updateid)");
+    }
+
+    /* ================= STATUS ================= */
+    public function status($updateid, $status)
+    {
+        if (is_array($updateid)) {
+            $updateid = implode(',', array_map('intval', $updateid));
+        } else {
+            $updateid = (int)$updateid;
+        }
+
+        parent::db_query(
+            "UPDATE pms_admin_users SET status='" . (int)$status . "' WHERE user_id IN ($updateid)"
+        );
+    }
+
+    /* ================= DISPLAY ================= */
+    public function display($start, $pagesize, $fld, $otype, $search_data)
+    {
+        $start    = (int)$start;
+        $pagesize = (int)$pagesize;
+
+        $wh = '';
+        $search_data = trim($search_data ?? ($_GET['search'] ?? ''));
+
+        if ($search_data !== '') {
+            $search_data = addslashes($search_data);
+            $wh = " AND (
+                name LIKE '%$search_data%'
+                OR email LIKE '%$search_data%'
+                OR user_type LIKE '%$search_data%'
+            )";
+        }
+
+        $allowed_fields = ['name','email','user_type','dpid','status','shortorder'];
+        $order_by = in_array($fld, $allowed_fields) ? $fld : 'shortorder';
+        $order_by2 = ($otype === 'asc') ? 'ASC' : 'DESC';
+
+        $sql_base = " FROM pms_admin_users WHERE 1 $wh";
+        $sql_count = "SELECT COUNT(*) " . $sql_base;
+        $sql = "SELECT * " . $sql_base . " ORDER BY $order_by $order_by2 LIMIT $start, $pagesize";
+
+        $result = parent::db_query($sql);
+        $reccnt = parent::db_scalar($sql_count);
+
+        return [$result, $reccnt];
+    }
+
+    /* ================= PASSWORD ================= */
+    public function password($password)
+    {
+        // Stronger hashing
+        return password_hash($password, PASSWORD_DEFAULT);
+    }
+}

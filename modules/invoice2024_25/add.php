@@ -474,178 +474,223 @@ if ($uid) {
 
                     </div>
 
-                <div class="invicecon">
+                    <div class="invicecon">
 
-    <table border="1" cellspacing="0" cellpadding="0" width="100%" class="stable" style="border-color:#2196F3;">
-        <tr>
-            <td width="85%" valign="top">
-                <p><strong>DESCRIPTION OF THE SERVICES</strong>
-                    <span style="float:right;" class="btn btn-secondary btn-sm" id="addnew">Add new</span>
-                </p>
-            </td>
-            <td width="14%" align="right" valign="top">
-                <p align="right"><strong>AMOUNT</strong></p>
-            </td>
-        </tr>
+                        <table border="1" cellspacing="0" cellpadding="0" width="100%" class="stable" style="border-color:#2196F3;">
+                            <tr>
+                                <td width="85%" valign="top">
+                                    <p><strong>DESCRIPTION OF THE SERVICES</strong>
+                                        <span style="float:right;" class="btn btn-secondary btn-sm" id="addnew">Add new</span>
+                                    </p>
+                                </td>
+                                <td width="14%" align="right" valign="top">
+                                    <p align="right"><strong>AMOUNT</strong></p>
+                                </td>
+                            </tr>
 
-        <tr>
-            <td width="85%" height="150" valign="top" class="additem">
-                <?php if (!empty($uid)) {
-                    $itemv = explode(":", $itemservice ?? '');
-                    $sac_code = explode(":", $sac ?? '');
-                    $ii = 0;
-                    foreach ($itemv as $key) { ?>
-                        <p class="aditem newdata">
-                            <input onkeyup="servicelist(this)" style="width:65%" type="text"
-                                   value="<?= htmlspecialchars($key ?? '', ENT_QUOTES) ?>"
-                                   name="itemservice[]" class="validate[required]" placeholder="Service Name" />
-                            <input type="text" name="sac[]" value="<?= htmlspecialchars($sac_code[$ii] ?? '', ENT_QUOTES) ?>"
-                                   style="width:20%" placeholder="SAC Code" />
-                            <a class="uibutton slm" style="color:red; float:right">X</a>
-                            <span class="appendeddata"></span>
-                        </p>
-                    <?php $ii++; }
-                } else { ?>
-                    <p class="newdata">
-                        <?php
-                        $lead_id = $_GET["lead_id"] ?? "";
-                        $leadsRow = [];
+                            <tr>
+                                <td width="85%" height="150" valign="top" class="additem">
+                                    <?php
+                                    if (!empty($uid)) {
+                                        // Ensure itemservice is string
+                                        $itemservice_arr = is_array($itemservice) ? $itemservice : (!empty($itemservice) ? explode(":", $itemservice) : []);
+                                        // $sac_arr = is_array($sac) ? $sac : (!empty($sac) ? explode(":", $sac) : []);
+                                        $sac_arr = [];
+                                        if (!empty($sac)) {
+                                            $sac_arr = is_array($sac) ? $sac : explode(":", (string)$sac);
+                                        } else {
+                                            $sac_arr[] = ''; // blank value, ताकि loop में empty input आए
+                                        }
 
-                        if (!empty($lead_id)) {
-                            $query = $PDO->db_query("SELECT service FROM #_leads WHERE id = '$lead_id'");
-                            $leadsRow = $PDO->db_fetch_array($query) ?: [];
-                        }
+                                        $count = max(count($itemservice_arr), count($sac_arr));
 
-                        $service_id = $leadsRow["service"] ?? "";
-                        $service_name = !empty($service_id)
-                            ? ($PDO->getSingleresult("SELECT name FROM #_product_manager WHERE pid='$service_id'") ?? "")
-                            : "";
+                                        for ($ii = 0; $ii < $count; $ii++) {
+                                            // Convert array values to string safely
+                                            $item_value = $itemservice_arr[$ii] ?? '';
+                                            if (is_array($item_value)) $item_value = implode(":", $item_value);
 
-                        $sac_code = !empty($service_id)
-                            ? ($PDO->getSingleresult("SELECT sacCode FROM #_product_manager WHERE pid='$service_id'") ?? "")
-                            : "";
-                        ?>
-                        <input type="text" name="itemservice[]" value="<?= htmlspecialchars($service_name, ENT_QUOTES) ?>"
-                               style="width:65%" onkeyup="servicelist(this)" class="validate[required]" placeholder="Service Name" />
-                        <input type="text" name="sac[]" style="width:20%"
-                               value="<?= htmlspecialchars($sac_code, ENT_QUOTES) ?>" placeholder="SAC Code" />
-                        <span class="appendeddata"></span>
-                    </p>
-                <?php } ?>
-            </td>
+                                            $sac_value = $sac_arr[$ii] ?? '';
+                                            if (is_array($sac_value)) $sac_value = implode(":", $sac_value);
+                                    ?>
+                                            <p class="aditem newdata">
+                                                <input type="text" name="itemservice[]" style="width:65%"
+                                                    value="<?= htmlspecialchars($item_value, ENT_QUOTES) ?>"
+                                                    onkeyup="servicelist(this)" class="validate[required]" placeholder="Service Name" />
+                                                <input type="text" name="sac[]" style="width:20%"
+                                                    value="<?= htmlspecialchars(
+                                                                (isset($sac_value) && is_string($sac_value) && trim($sac_value) !== '') ? $sac_value : '',
+                                                                ENT_QUOTES
+                                                            ) ?>" placeholder="SAC Code" />
 
-            <td width="14%" height="150" align="right" valign="top" class="additemprice">
-                <?php if (!empty($uid)) {
-                    $pricev = explode(":", $itempriceservice ?? '');
-                    foreach ($pricev as $valuev) { ?>
-                        <p class="aditem">
-                            <input type="number" step="0.01" autocomplete="off"
-                                   value="<?= htmlspecialchars($valuev ?? '', ENT_QUOTES) ?>"
-                                   name="itempriceservice[]" class="validate[required,custom[number]] aadpr"
-                                   placeholder="4676" />
-                        </p>
-                    <?php }
-                } else { ?>
-                    <p>
-                        <input autocomplete="off" type="number" step="0.01" name="itempriceservice[]"
-                               class="validate[required,custom[number]] aadpr" placeholder="4676" />
-                    </p>
-                <?php } ?>
-            </td>
-        </tr>
 
-        <?php if (!empty($uid)) { ?>
-            <tr class="igst" style="display:<?= ($placetosupply ?? '') != 'Delhi - 07' ? 'table-row' : 'none' ?>">
-                <td width="85%" valign="top"><p align="left">IGST @ 18%</p></td>
-                <td width="14%" align="right" valign="top"><p><span id="srtax"><?= $hsrtax ?? '0.00' ?></span> /-</p></td>
-            </tr>
+                                                <a class="uibutton slm" style="color:red; float:right">X</a>
+                                                <span class="appendeddata"></span>
+                                            </p>
+                                        <?php }
+                                    } else {
+                                        // Add mode (new record)
+                                        $lead_id = $_GET["lead_id"] ?? "";
+                                        $leadsRow = [];
+                                        if (!empty($lead_id)) {
+                                            $query = $PDO->db_query("SELECT service FROM #_leads WHERE id = '$lead_id'");
+                                            $leadsRow = $PDO->db_fetch_array($query) ?: [];
+                                        }
 
-            <tr class="sgst" style="display:<?= ($placetosupply ?? '') == 'Delhi - 07' ? 'table-row' : 'none' ?>">
-                <td width="85%" valign="top"><p align="left">S GST @ 9%</p></td>
-                <td width="14%" align="right" valign="top"><p><span id="sbtax"><?= $hsbtax ?? '0.00' ?></span> /-</p></td>
-            </tr>
+                                        $service_id = $leadsRow["service"] ?? '';
+                                        $service_name = $PDO->getSingleresult("SELECT name FROM #_product_manager WHERE pid='$service_id'") ?? '';
+                                        $sac_code = $PDO->getSingleresult("SELECT sacCode FROM #_product_manager WHERE pid='$service_id'") ?? '';
+                                        ?>
+                                        <p class="newdata">
+                                            <input type="text" name="itemservice[]" style="width:65%"
+                                                value="<?= htmlspecialchars($service_name, ENT_QUOTES) ?>" onkeyup="servicelist(this)"
+                                                class="validate[required]" placeholder="Service Name" />
 
-            <tr class="sgst" style="display:<?= ($placetosupply ?? '') == 'Delhi - 07' ? 'table-row' : 'none' ?>">
-                <td width="85%" valign="top"><p align="left">C GST @ 9%</p></td>
-                <td width="14%" align="right" valign="top"><p><span id="kktax"><?= $hkktax ?? '0.00' ?></span> /-</p></td>
-            </tr>
-        <?php } else { ?>
-            <tr class="igst">
-                <td width="85%" valign="top"><p align="left">IGST @ 18%</p></td>
-                <td width="14%" align="right" valign="top"><p><span id="srtax"><?= $hsrtax ?? '0.00' ?></span> /-</p></td>
-            </tr>
-            <tr class="sgst" style="display:none;">
-                <td width="85%" valign="top"><p align="left">S GST @ 9%</p></td>
-                <td width="14%" align="right" valign="top"><p><span id="sbtax"><?= $hsbtax ?? '0.00' ?></span> /-</p></td>
-            </tr>
-            <tr class="sgst" style="display:none;">
-                <td width="85%" valign="top"><p align="left">C GST @ 9%</p></td>
-                <td width="14%" align="right" valign="top"><p><span id="kktax"><?= $hkktax ?? '0.00' ?></span> /-</p></td>
-            </tr>
-        <?php } ?>
+                                            <input type="text" name="sac[]" style="width:20%"
+                                                value="<?= htmlspecialchars($sac_code, ENT_QUOTES) ?>" placeholder="SAC Code" />
 
-        <tr class="reverse-charge" style="display:none;">
-            <td width="85%" valign="top"><p align="left">Supply of Services liable to Reverse Charge</p></td>
-            <td>Yes</td>
-        </tr>
+                                            <span class="appendeddata"></span>
+                                        </p>
+                                    <?php } ?>
+                                </td>
 
-        <tr>
-            <td width="85%" valign="top">
-                <p><strong>TOTAL</strong> :
-                    <span style="float:right;" class="btn btn-secondary btn-sm" id="adonaddnew">Add new</span>
-                </p>
-            </td>
-            <td width="14%" align="right" valign="top">
-                <p><strong><span id="maintotal"><?= $hmaintotal ?? '0.00' ?></span> /-</strong></p>
-            </td>
-        </tr>
+                                <td width="14%" height="150" align="right" valign="top" class="additemprice">
+                                    <?php if (!empty($uid)) {
+                                        $pricev = explode(":", $itempriceservice ?? '');
+                                        foreach ($pricev as $valuev) { ?>
+                                            <p class="aditem">
+                                                <input type="number" step="0.01" autocomplete="off"
+                                                    value="<?= htmlspecialchars($valuev ?? '', ENT_QUOTES) ?>"
+                                                    name="itempriceservice[]" class="validate[required,custom[number]] aadpr"
+                                                    placeholder="4676" />
+                                            </p>
+                                        <?php }
+                                    } else { ?>
+                                        <p>
+                                            <input autocomplete="off" type="number" step="0.01" name="itempriceservice[]"
+                                                class="validate[required,custom[number]] aadpr" placeholder="4676" />
+                                        </p>
+                                    <?php } ?>
+                                </td>
+                            </tr>
 
-        <tr>
-            <td width="85%" height="150" valign="top" class="adisadditem">
-                <?php if (!empty($uid) && !empty($itemadon)) {
-                    $itemadoninv = explode(":", $itemadon ?? '');
-                    foreach ($itemadoninv as $keyi) { ?>
-                        <p class="aditem">
-                            <input value="<?= htmlspecialchars($keyi ?? '', ENT_QUOTES) ?>" type="text"
-                                   name="itemadon[]" class="validate[required]" placeholder="Service Name" />
-                            <a class="uibutton slm closebtn" style="float:right">
-                                <i class="fa fa-window-close-o"></i>
-                            </a>
-                        </p>
-                    <?php }
-                } ?>
-            </td>
+                            <?php if (!empty($uid)) { ?>
+                                <tr class="igst" style="display:<?= ($placetosupply ?? '') != 'Delhi - 07' ? 'table-row' : 'none' ?>">
+                                    <td width="85%" valign="top">
+                                        <p align="left">IGST @ 18%</p>
+                                    </td>
+                                    <td width="14%" align="right" valign="top">
+                                        <p><span id="srtax"><?= $hsrtax ?? '0.00' ?></span> /-</p>
+                                    </td>
+                                </tr>
 
-            <td width="14%" height="150" align="right" valign="top" class="adisadditemprice">
-                <?php if (!empty($uid) && !empty($itempriceadon)) {
-                    $priceinv = explode(":", $itempriceadon ?? '');
-                    foreach ($priceinv as $vali) { ?>
-                        <p class="aditem">
-                            <input type="number" step="0.01" autocomplete="off"
-                                   value="<?= htmlspecialchars($vali ?? '', ENT_QUOTES) ?>"
-                                   name="itempriceadon[]" class="validate[required,custom[number]]" placeholder="4676" />
-                        </p>
-                    <?php }
-                } ?>
-            </td>
-        </tr>
+                                <tr class="sgst" style="display:<?= ($placetosupply ?? '') == 'Delhi - 07' ? 'table-row' : 'none' ?>">
+                                    <td width="85%" valign="top">
+                                        <p align="left">S GST @ 9%</p>
+                                    </td>
+                                    <td width="14%" align="right" valign="top">
+                                        <p><span id="sbtax"><?= $hsbtax ?? '0.00' ?></span> /-</p>
+                                    </td>
+                                </tr>
 
-        <tr>
-            <td width="85%" valign="top">
-                <p><strong>GROSS TOTAL</strong> : <br />
-                    (<strong>In Words:</strong>
-                    <span id="inwords"><?= htmlspecialchars($hinwords ?? '', ENT_QUOTES) ?></span>)
-                </p>
-            </td>
-            <td width="14%" align="right" valign="top">
-                <p align="center">
-                    <strong><span id="grasstotal"><?= htmlspecialchars($hgrasstotal ?? '0.00', ENT_QUOTES) ?></span> /-</strong>
-                </p>
-            </td>
-        </tr>
-    </table>
+                                <tr class="sgst" style="display:<?= ($placetosupply ?? '') == 'Delhi - 07' ? 'table-row' : 'none' ?>">
+                                    <td width="85%" valign="top">
+                                        <p align="left">C GST @ 9%</p>
+                                    </td>
+                                    <td width="14%" align="right" valign="top">
+                                        <p><span id="kktax"><?= $hkktax ?? '0.00' ?></span> /-</p>
+                                    </td>
+                                </tr>
+                            <?php } else { ?>
+                                <tr class="igst">
+                                    <td width="85%" valign="top">
+                                        <p align="left">IGST @ 18%</p>
+                                    </td>
+                                    <td width="14%" align="right" valign="top">
+                                        <p><span id="srtax"><?= $hsrtax ?? '0.00' ?></span> /-</p>
+                                    </td>
+                                </tr>
+                                <tr class="sgst" style="display:none;">
+                                    <td width="85%" valign="top">
+                                        <p align="left">S GST @ 9%</p>
+                                    </td>
+                                    <td width="14%" align="right" valign="top">
+                                        <p><span id="sbtax"><?= $hsbtax ?? '0.00' ?></span> /-</p>
+                                    </td>
+                                </tr>
+                                <tr class="sgst" style="display:none;">
+                                    <td width="85%" valign="top">
+                                        <p align="left">C GST @ 9%</p>
+                                    </td>
+                                    <td width="14%" align="right" valign="top">
+                                        <p><span id="kktax"><?= $hkktax ?? '0.00' ?></span> /-</p>
+                                    </td>
+                                </tr>
+                            <?php } ?>
 
-</div>
+                            <tr class="reverse-charge" style="display:none;">
+                                <td width="85%" valign="top">
+                                    <p align="left">Supply of Services liable to Reverse Charge</p>
+                                </td>
+                                <td>Yes</td>
+                            </tr>
+
+                            <tr>
+                                <td width="85%" valign="top">
+                                    <p><strong>TOTAL</strong> :
+                                        <span style="float:right;" class="btn btn-secondary btn-sm" id="adonaddnew">Add new</span>
+                                    </p>
+                                </td>
+                                <td width="14%" align="right" valign="top">
+                                    <p><strong><span id="maintotal"><?= $hmaintotal ?? '0.00' ?></span> /-</strong></p>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td width="85%" height="150" valign="top" class="adisadditem">
+                                    <?php if (!empty($uid) && !empty($itemadon)) {
+                                        $itemadoninv = explode(":", $itemadon ?? '');
+                                        foreach ($itemadoninv as $keyi) { ?>
+                                            <p class="aditem">
+                                                <input value="<?= htmlspecialchars($keyi ?? '', ENT_QUOTES) ?>" type="text"
+                                                    name="itemadon[]" class="validate[required]" placeholder="Service Name" />
+                                                <a class="uibutton slm closebtn" style="float:right">
+                                                    <i class="fa fa-window-close-o"></i>
+                                                </a>
+                                            </p>
+                                    <?php }
+                                    } ?>
+                                </td>
+
+                                <td width="14%" height="150" align="right" valign="top" class="adisadditemprice">
+                                    <?php if (!empty($uid) && !empty($itempriceadon)) {
+                                        $priceinv = explode(":", $itempriceadon ?? '');
+                                        foreach ($priceinv as $vali) { ?>
+                                            <p class="aditem">
+                                                <input type="number" step="0.01" autocomplete="off"
+                                                    value="<?= htmlspecialchars($vali ?? '', ENT_QUOTES) ?>"
+                                                    name="itempriceadon[]" class="validate[required,custom[number]]" placeholder="4676" />
+                                            </p>
+                                    <?php }
+                                    } ?>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td width="85%" valign="top">
+                                    <p><strong>GROSS TOTAL</strong> : <br />
+                                        (<strong>In Words:</strong>
+                                        <span id="inwords"><?= htmlspecialchars($hinwords ?? '', ENT_QUOTES) ?></span>)
+                                    </p>
+                                </td>
+                                <td width="14%" align="right" valign="top">
+                                    <p align="center">
+                                        <strong><span id="grasstotal"><?= htmlspecialchars($hgrasstotal ?? '0.00', ENT_QUOTES) ?></span> /-</strong>
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+
+                    </div>
 
 
                     <input type="hidden" id="hsrtax" name="hsrtax" value="<?= $hsrtax ?? 0 ?>" />
@@ -736,20 +781,11 @@ if ($uid) {
                 <div class="sectioninner">
 
                     <div class="d-flex justify-content-center mt-2 mb-4">
-
-
-
-
-
                         <input type="hidden" name="inviceno" value="<?= $new_invoice_no ?>" />
-
                         <input type="hidden" name="user_type" value="1" />
-
                         <input type="hidden" name="lid" value="<?= $lid ?? '' ?>" />
                         <input type="hidden" name="raid" value="<?= $raid ?? '' ?>" />
-
                         <input type="submit" class="uibutton loading btn btn-primary mr-1" value="Submit">
-
                         <input type="button" class="uibutton  special btn btn-primary " value="Clear form" onclick="location.reload();">
 
                     </div>
@@ -977,6 +1013,7 @@ if ($uid) {
         });
 
     });
+
     function removebox(a, b) {
 
         var indx = a.parent().index();
@@ -986,98 +1023,100 @@ if ($uid) {
     }
 
     ;
+
     function additems(a, b, c, d) {
         $('.' + a).append('<p class="aditem newdata"><input type="text" style="width:65%" name="item' + c + '[]" ' + d + ' class="validate[required]" placeholder="Service Name" /> <input type="text" name="sac[]" style="width:20%"  placeholder="Sac Code" /><a class="uibutton slm" style="color:red; float:right; font-size:1.5rem;" ><i class="fa fa-window-close"></i></a><span class="appendeddata"></span></p>');
         $('.' + b).append('<p class="aditem"><input autocomplete="off" type="number" step="0.01" name="itemprice' + c + '[]" class="validate[required,custom[number]] aadpr"  placeholder="4676" /></p>');
 
     };
-  function calculation() {
-    var total = 0;
-    var total2 = 0;
 
-    // Main service item prices
-    $('.additemprice').find('p input').each(function(index, element) {
-        var val = parseFloat(element.value);
-        if (!isNaN(val) && val > 0) {
-            total += val;
+    function calculation() {
+        var total = 0;
+        var total2 = 0;
+
+        // Main service item prices
+        $('.additemprice').find('p input').each(function(index, element) {
+            var val = parseFloat(element.value);
+            if (!isNaN(val) && val > 0) {
+                total += val;
+            }
+        });
+
+        // Additional item prices
+        $('.adisadditemprice').find('p input').each(function(index, element) {
+            var val = parseFloat(element.value);
+            if (!isNaN(val) && val > 0) {
+                total2 += val;
+            }
+        });
+
+        // Calculate taxes
+        var tax18 = taxes(total, 18);
+        var tax9 = taxes(total, 9);
+
+        $('#srtax').text(tax18.toFixed(2));
+        $('#sbtax').text(tax9.toFixed(2));
+        $('#kktax').text(tax9.toFixed(2));
+
+        var isGST = $('#isGSTApplicable').val() === 'yes';
+        var grt = isGST ? (total + tax18) : total;
+
+        // Round totals
+        var maintotal = Math.round(grt);
+        var grasstotal = Math.round(grt + total2);
+
+        // Update text fields
+        $('#maintotal').text(maintotal);
+        $('#grasstotal').text(grasstotal);
+        $('#inwords').text(inWords(grasstotal));
+
+        // Update hidden fields
+        if (isGST) {
+            $('#hsrtax').val(tax18.toFixed(2));
+            $('#hsbtax').val(tax9.toFixed(2));
+            $('#hkktax').val(tax9.toFixed(2));
         }
-    });
 
-    // Additional item prices
-    $('.adisadditemprice').find('p input').each(function(index, element) {
-        var val = parseFloat(element.value);
-        if (!isNaN(val) && val > 0) {
-            total2 += val;
-        }
-    });
-
-    // Calculate taxes
-    var tax18 = taxes(total, 18);
-    var tax9 = taxes(total, 9);
-
-    $('#srtax').text(tax18.toFixed(2));
-    $('#sbtax').text(tax9.toFixed(2));
-    $('#kktax').text(tax9.toFixed(2));
-
-    var isGST = $('#isGSTApplicable').val() === 'yes';
-    var grt = isGST ? (total + tax18) : total;
-
-    // Round totals
-    var maintotal = Math.round(grt);
-    var grasstotal = Math.round(grt + total2);
-
-    // Update text fields
-    $('#maintotal').text(maintotal);
-    $('#grasstotal').text(grasstotal);
-    $('#inwords').text(inWords(grasstotal));
-
-    // Update hidden fields
-    if (isGST) {
-        $('#hsrtax').val(tax18.toFixed(2));
-        $('#hsbtax').val(tax9.toFixed(2));
-        $('#hkktax').val(tax9.toFixed(2));
+        $('#hgrasstotal').val(grasstotal);
+        $('#hmaintotal').val(maintotal);
+        $('#hinwords').val(inWords(grasstotal)); // fixed space in selector
     }
-
-    $('#hgrasstotal').val(grasstotal);
-    $('#hmaintotal').val(maintotal);
-    $('#hinwords').val(inWords(grasstotal)); // fixed space in selector
-}
 
     function taxes(a, b) {
         return a * b / 100
 
     }
 
-const a = [
-  '', 'one ', 'two ', 'three ', 'four ', 'five ', 'six ', 'seven ',
-  'eight ', 'nine ', 'ten ', 'eleven ', 'twelve ', 'thirteen ',
-  'fourteen ', 'fifteen ', 'sixteen ', 'seventeen ', 'eighteen ', 'nineteen '
-];
-const b = ['', '', 'twenty ', 'thirty ', 'forty ', 'fifty ', 'sixty ', 'seventy ', 'eighty ', 'ninety '];
+    const a = [
+        '', 'one ', 'two ', 'three ', 'four ', 'five ', 'six ', 'seven ',
+        'eight ', 'nine ', 'ten ', 'eleven ', 'twelve ', 'thirteen ',
+        'fourteen ', 'fifteen ', 'sixteen ', 'seventeen ', 'eighteen ', 'nineteen '
+    ];
+    const b = ['', '', 'twenty ', 'thirty ', 'forty ', 'fifty ', 'sixty ', 'seventy ', 'eighty ', 'ninety '];
 
-function inWords(num) {
-    num = parseInt(num, 10);
-    if (isNaN(num) || num === 0) return 'Rupees Zero only';
+    function inWords(num) {
+        num = parseInt(num, 10);
+        if (isNaN(num) || num === 0) return 'Rupees Zero only';
 
-    if (num.toString().length > 9) return 'Overflow (max 9 digits)';
+        if (num.toString().length > 9) return 'Overflow (max 9 digits)';
 
-    const n = ('000000000' + num)
-        .substr(-9)
-        .match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+        const n = ('000000000' + num)
+            .substr(-9)
+            .match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
 
-    if (!n) return '';
+        if (!n) return '';
 
-    let str = '';
-    str += (n[1] != 0) ? (a[+n[1]] || (b[n[1][0]] + a[n[1][1]])) + 'crore ' : '';
-    str += (n[2] != 0) ? (a[+n[2]] || (b[n[2][0]] + a[n[2][1]])) + 'lakh ' : '';
-    str += (n[3] != 0) ? (a[+n[3]] || (b[n[3][0]] + a[n[3][1]])) + 'thousand ' : '';
-    str += (n[4] != 0) ? (a[+n[4]] || (b[n[4][0]] + a[n[4][1]])) + 'hundred ' : '';
-    str += (n[5] != 0)
-        ? ((str !== '') ? 'and ' : '') + (a[+n[5]] || (b[n[5][0]] + a[n[5][1]]))
-        : '';
+        let str = '';
+        str += (n[1] != 0) ? (a[+n[1]] || (b[n[1][0]] + a[n[1][1]])) + 'crore ' : '';
+        str += (n[2] != 0) ? (a[+n[2]] || (b[n[2][0]] + a[n[2][1]])) + 'lakh ' : '';
+        str += (n[3] != 0) ? (a[+n[3]] || (b[n[3][0]] + a[n[3][1]])) + 'thousand ' : '';
+        str += (n[4] != 0) ? (a[+n[4]] || (b[n[4][0]] + a[n[4][1]])) + 'hundred ' : '';
+        str += (n[5] != 0) ?
+            ((str !== '') ? 'and ' : '') + (a[+n[5]] || (b[n[5][0]] + a[n[5][1]])) :
+            '';
 
-    return 'Rupees ' + str.trim() + 'only';
-}
+        return 'Rupees ' + str.trim() + 'only';
+    }
 
     function servicelist(el) {
         $.ajax({

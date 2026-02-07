@@ -1,7 +1,6 @@
 <?php
 
 include(FS_ADMIN._MODS."/invoice2024_25/invoice2024_25.inc.php");
-
 $month = $_GET['month'] ?? null;
 $year = $_GET['year'] ?? null;
 $SalesExecutive = $_GET['SalesExecutive'] ?? null;
@@ -17,6 +16,7 @@ $mtype = '';
 $extra = '';
 $extra1 = '';
 $extra2 = '';
+
 
 // Build filters safely
 $sessionId = $_SESSION["AMD"][0] ?? '';
@@ -58,6 +58,8 @@ if (isset($raid)) {
 $PAGS = new Pages();
 
 // Handle actions
+$uid = isset($_GET['uid']) ? (int) $_GET['uid'] : 0;
+
 if ($action) {
     if (($uid ?? 0) > 0 || !empty($arr_ids)) {
         switch ($action) {
@@ -153,7 +155,10 @@ if ($reccnt > 0) {
 <?php endif; ?>
 
     <a href="<?=SITE_PATH_ADM.'index.php?comp='.$comp.'&mode=add&uid='.$pid?>"><i class="fa fa-edit"></i></a>
-    <a href="<?=SITE_PATH_ADM.'index.php?comp='.$comp.'&uid='.$pid.'&action=del'?>" onclick="return confirm('Do you want delete this record?');"><i class="fa fa-trash-o"></i></a>
+<a href="<?= SITE_PATH_ADM.'index.php?comp='.$comp.'&uid='.$pid.'&action=del' ?>"
+   onclick="return confirm('Do you want delete this record?');">
+   <i class="fa fa-trash-o"></i>
+</a>
 
 
   </td>
