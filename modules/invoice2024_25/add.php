@@ -489,69 +489,70 @@ if ($uid) {
                             </tr>
 
                             <tr>
-                                <td width="85%" height="150" valign="top" class="additem">
-                                    <?php
-                                    if (!empty($uid)) {
-                                        // Ensure itemservice is string
-                                        $itemservice_arr = is_array($itemservice) ? $itemservice : (!empty($itemservice) ? explode(":", $itemservice) : []);
-                                        // $sac_arr = is_array($sac) ? $sac : (!empty($sac) ? explode(":", $sac) : []);
-                                        $sac_arr = [];
-                                        if (!empty($sac)) {
-                                            $sac_arr = is_array($sac) ? $sac : explode(":", (string)$sac);
-                                        } else {
-                                            $sac_arr[] = ''; // blank value, ताकि loop में empty input आए
-                                        }
+<td width="85%" height="150" valign="top" class="additem">
+    <?php
+    // EDIT mode
+    if (!empty($uid)) {
+        // Ensure itemservice and sac are arrays
+        $itemservice_arr = !empty($itemservice) ? (is_array($itemservice) ? $itemservice : explode(":", $itemservice)) : [''];
+        $sac_arr = !empty($sac) ? (is_array($sac) ? $sac : explode(":", $sac)) : [''];
 
-                                        $count = max(count($itemservice_arr), count($sac_arr));
+        $count = max(count($itemservice_arr), count($sac_arr));
 
-                                        for ($ii = 0; $ii < $count; $ii++) {
-                                            // Convert array values to string safely
-                                            $item_value = $itemservice_arr[$ii] ?? '';
-                                            if (is_array($item_value)) $item_value = implode(":", $item_value);
+        for ($ii = 0; $ii < $count; $ii++) {
+            $item_value = $itemservice_arr[$ii] ?? '';
+            if (is_array($item_value)) $item_value = implode(":", $item_value);
 
-                                            $sac_value = $sac_arr[$ii] ?? '';
-                                            if (is_array($sac_value)) $sac_value = implode(":", $sac_value);
-                                    ?>
-                                            <p class="aditem newdata">
-                                                <input type="text" name="itemservice[]" style="width:65%"
-                                                    value="<?= htmlspecialchars($item_value, ENT_QUOTES) ?>"
-                                                    onkeyup="servicelist(this)" class="validate[required]" placeholder="Service Name" />
-                                                <input type="text" name="sac[]" style="width:20%"
-                                                    value="<?= htmlspecialchars(
-                                                                (isset($sac_value) && is_string($sac_value) && trim($sac_value) !== '') ? $sac_value : '',
-                                                                ENT_QUOTES
-                                                            ) ?>" placeholder="SAC Code" />
+            $sac_value = $sac_arr[$ii] ?? '';
+            // Force sac_value to string, even if empty or array
+            if (is_array($sac_value)) {
+                $sac_value = implode(":", $sac_value);
+            }
+            $sac_value = trim((string)$sac_value); // convert empty arrays or null to blank string
+    ?>
+            <p class="aditem newdata">
+                <input type="text" name="itemservice[]" style="width:65%"
+                       value="<?= htmlspecialchars($item_value, ENT_QUOTES) ?>"
+                       onkeyup="servicelist(this)" class="validate[required]" placeholder="Service Name" />
+
+                <input type="text" name="sac[]" style="width:20%"
+                       value="<?= htmlspecialchars($sac_value, ENT_QUOTES) ?>"
+                       placeholder="SAC Code" />
+
+                <a class="uibutton slm" style="color:red; float:right">X</a>
+                <span class="appendeddata"></span>
+            </p>
+    <?php
+        }
+    }
+    // ADD mode
+    else {
+        $lead_id = $_GET["lead_id"] ?? "";
+        $leadsRow = [];
+        if (!empty($lead_id)) {
+            $query = $PDO->db_query("SELECT service FROM #_leads WHERE id = '$lead_id'");
+            $leadsRow = $PDO->db_fetch_array($query) ?: [];
+        }
+
+        $service_id = $leadsRow["service"] ?? '';
+        $service_name = $PDO->getSingleresult("SELECT name FROM #_product_manager WHERE pid='$service_id'") ?? '';
+        $sac_code = $PDO->getSingleresult("SELECT sacCode FROM #_product_manager WHERE pid='$service_id'") ?? '';
+        $sac_code = trim((string)$sac_code); // ensure string, never Array
+    ?>
+        <p class="newdata">
+            <input type="text" name="itemservice[]" style="width:65%"
+                   value="<?= htmlspecialchars($service_name, ENT_QUOTES) ?>" onkeyup="servicelist(this)"
+                   class="validate[required]" placeholder="Service Name" />
+
+            <input type="text" name="sac[]" style="width:20%"
+                   value="<?= htmlspecialchars($sac_code, ENT_QUOTES) ?>" placeholder="SAC Code" />
+
+            <span class="appendeddata"></span>
+        </p>
+    <?php } ?>
+</td>
 
 
-                                                <a class="uibutton slm" style="color:red; float:right">X</a>
-                                                <span class="appendeddata"></span>
-                                            </p>
-                                        <?php }
-                                    } else {
-                                        // Add mode (new record)
-                                        $lead_id = $_GET["lead_id"] ?? "";
-                                        $leadsRow = [];
-                                        if (!empty($lead_id)) {
-                                            $query = $PDO->db_query("SELECT service FROM #_leads WHERE id = '$lead_id'");
-                                            $leadsRow = $PDO->db_fetch_array($query) ?: [];
-                                        }
-
-                                        $service_id = $leadsRow["service"] ?? '';
-                                        $service_name = $PDO->getSingleresult("SELECT name FROM #_product_manager WHERE pid='$service_id'") ?? '';
-                                        $sac_code = $PDO->getSingleresult("SELECT sacCode FROM #_product_manager WHERE pid='$service_id'") ?? '';
-                                        ?>
-                                        <p class="newdata">
-                                            <input type="text" name="itemservice[]" style="width:65%"
-                                                value="<?= htmlspecialchars($service_name, ENT_QUOTES) ?>" onkeyup="servicelist(this)"
-                                                class="validate[required]" placeholder="Service Name" />
-
-                                            <input type="text" name="sac[]" style="width:20%"
-                                                value="<?= htmlspecialchars($sac_code, ENT_QUOTES) ?>" placeholder="SAC Code" />
-
-                                            <span class="appendeddata"></span>
-                                        </p>
-                                    <?php } ?>
-                                </td>
 
                                 <td width="14%" height="150" align="right" valign="top" class="additemprice">
                                     <?php if (!empty($uid)) {

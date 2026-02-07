@@ -99,14 +99,14 @@ $adonvalus = explode(":", $itempriceadon ?? '');
     $pdf_path = __DIR__ . "/pdf/" . $filename . ".pdf";
     $pdf->Output($pdf_path, "F");
 
-// $sname = 'Record has been added/updated. PDF file generated successfully: '.$filename.'.pdf';
-// $RW->sessset($sname,'s');
-// $RW->redir($ADMIN->iurl($comp), true); // redirect to listing page
+$sname = 'Record has been added/updated. PDF file generated successfully: '.$filename.'.pdf';
+$RW->sessset($sname,'s');
+$RW->redir($ADMIN->iurl($comp), true); // redirect to listing page
 
 
-    echo '<h2 style="text-align:center;">PDF Generated Successfully</h2>';
-    echo '<div style="text-align:center; margin-top:20px;">
-            <a href="' . SITE_PATH_ADM . _MODS . "/invoice2024_25/pdf/" . $filename . '.pdf" download class="btn btn-success">Download PDF</a>
-          </div>';
+    // echo '<h2 style="text-align:center;">PDF Generated Successfully</h2>';
+    // echo '<div style="text-align:center; margin-top:20px;">
+    //         <a href="' . SITE_PATH_ADM . _MODS . "/invoice2024_25/pdf/" . $filename . '.pdf" download class="btn btn-success">Download PDF</a>
+    //       </div>';
 }
 ?>
